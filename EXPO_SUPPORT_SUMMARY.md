@@ -1,192 +1,208 @@
-# Twilio Voice React Native SDK - Expo Support Summary
+# Twilio Voice React Native SDK - Expo Support Guide
 
-## Overview
+This guide details how to use the Twilio Voice React Native SDK in Expo applications. The SDK has been modified to provide support for both Expo and bare React Native applications.
 
-This document summarizes the changes made to add Expo support to the Twilio Voice React Native SDK, following the guide in [issue #496](https://github.com/twilio/twilio-voice-react-native/issues/496). It also provides instructions for using this fork in your Expo app and outlines next steps for further development.
+## Requirements
 
-## Summary of Changes
+- Expo SDK 48 or higher
+- Expo Development Build workflow (`npx expo prebuild`)
+- Google Firebase project (for Android push notifications)
+- Apple Developer account (for iOS VoIP push notifications)
 
-### 1. iOS Config Plugin (`expo-config-plugin/ios.js`)
-- Added required background modes:
-  - Audio
-  - Voice over IP
-  - Push Notifications
-- Added required permissions:
-  - Microphone access
-  - Camera access
+## Installation
 
-### 2. Android Config Plugin (`expo-config-plugin/android.js`)
-- Added required permissions:
-  - INTERNET
-  - RECORD_AUDIO
-  - MODIFY_AUDIO_SETTINGS
-  - ACCESS_NETWORK_STATE
-  - WAKE_LOCK
-  - FOREGROUND_SERVICE
-- Added required services:
-  - VoiceFirebaseMessagingService
-- Added Google Services Plugin to build.gradle
-- Added functionality to copy google-services.json to the proper location
+```bash
+# Using npm
+npm install @twilio/voice-react-native-sdk
 
-### 3. Android Expo Package, Module, and Lifecycle Listeners
-- Created `ExpoModule.kt` with voice methods:
-  - voice_connect
-  - voice_disconnect
-  - voice_accept
-  - voice_reject
-- Created `ExpoPackage.java` to declare lifecycle listeners
-- Created `ExpoActivityLifecycleListener.java` to handle activity lifecycle events
-- Created `ExpoApplicationLifecycleListener.java` to handle application lifecycle events
+# Using yarn
+yarn add @twilio/voice-react-native-sdk
 
-### 4. Modified Android build.gradle
-- Added Kotlin compiler configuration (version 1.9.24)
+# Using pnpm
+pnpm add @twilio/voice-react-native-sdk
+```
 
-### 5. JS Module (`src/ExpoModule.ts`)
-- Created to utilize the Expo Modules API
-- Implemented platform-specific code paths for iOS and Android
+## Setup
 
-### 6. Expo Configuration Files
-- Created `expo-module.config.json` to declare the Android module
-- Created `app.config.js` to configure the Expo plugins
+### 1. Modify app.json or app.config.js
 
-### 7. Package.json
-- Moved expo-modules-core from devDependencies to dependencies
+Add the Twilio Voice plugin to your Expo config:
 
-### 8. Firebase Cloud Messaging Configuration
-- Verified that the config.xml file already has the required configuration
+```js
+// app.config.js
+module.exports = {
+  // ... your existing config
+  plugins: [
+    // ... other plugins
+    "@twilio/voice-react-native-sdk"
+  ]
+};
+```
 
-## Using This Fork in Your Expo App
+### 2. Setup Push Notifications
 
-### Prerequisites
-1. You need to have an Expo app with the "bare" workflow (not managed workflow)
-2. You need to have a Twilio account with Voice capabilities
-3. You need to have Firebase Cloud Messaging set up for your app
+#### Android
 
-### Installation Steps
+1. Create a Firebase project and download the `google-services.json` file
+2. Place the `google-services.json` file in the root of your Expo project
 
-1. **Install the fork from the repository**
-   ```bash
-   yarn add git+https://github.com/guyrosen/twilio-voice-react-native.git
-   # or
-   npm install git+https://github.com/guyrosen/twilio-voice-react-native.git
-   ```
+#### iOS
 
-2. **Add the Expo config plugins to your app.config.js**
-   ```javascript
-   module.exports = {
-     // ... your existing config
-     plugins: [
-       // ... your existing plugins
-       './node_modules/@twilio/voice-react-native-sdk/expo-config-plugin/ios.js',
-       './node_modules/@twilio/voice-react-native-sdk/expo-config-plugin/android.js'
+1. Create a VoIP Services Certificate in your Apple Developer account
+2. Configure your Expo project for Push Notifications
+3. Ensure your app has the proper capabilities (will be handled by the config plugin)
+
+### 3. Prebuild and Run
+
+```bash
+# Clean the project if you've built it before
+npx expo clean
+
+# Generate native code with Expo prebuild
+npx expo prebuild --clean
+
+# Run on Android
+npx expo run:android
+
+# Run on iOS
+npx expo run:ios
+```
+
+## Usage
+
+### Import and Initialize
+
+```tsx
+import React, { useEffect } from 'react';
+import { View, Button, Text } from 'react-native';
+import { VoiceExpo } from '@twilio/voice-react-native-sdk';
+
+function VoiceScreen() {
+  const [isRegistered, setIsRegistered] = useState(false);
+  
+  // Register for incoming calls
+  const registerForCalls = async () => {
+    try {
+      // Get your access token from server
+      const accessToken = await fetchAccessToken();
+      
+      // Register for incoming calls
+      await VoiceExpo.register(accessToken);
+      setIsRegistered(true);
+    } catch (error) {
+      console.error('Error registering for calls:', error);
+    }
+  };
+  
+  // Make an outgoing call
+  const makeCall = async () => {
+    try {
+      // Get your access token from server
+      const accessToken = await fetchAccessToken();
+      
+      // Connect a call
+      const callId = await VoiceExpo.connect(accessToken);
+      console.log('Call connected with ID:', callId);
+    } catch (error) {
+      console.error('Error making call:', error);
+    }
+  };
+  
+  return (
+    <View>
+      {!isRegistered && (
+        <Button title="Register for Calls" onPress={registerForCalls} />
+      )}
+      <Button title="Make Call" onPress={makeCall} />
+    </View>
+  );
+}
+```
+
+### Handling Incoming Calls
+
+To handle incoming calls, you need to set up event listeners. The Twilio Voice SDK uses event emitters to notify your app of incoming calls and call state changes.
+
+```tsx
+import { Voice } from '@twilio/voice-react-native-sdk';
+
+// In your component
+useEffect(() => {
+  // Listen for incoming calls
+  const callInviteListener = Voice.onCallInvite((callInvite) => {
+    console.log('Incoming call from:', callInvite.getFrom());
+    // Show UI for accepting/rejecting the call
+  });
+  
+  // Listen for canceled calls
+  const canceledCallInviteListener = Voice.onCancelledCallInvite(() => {
+    console.log('Call was canceled');
+    // Update UI
+  });
+  
+  // Clean up listeners
+  return () => {
+    callInviteListener.remove();
+    canceledCallInviteListener.remove();
+  };
+}, []);
+```
+
+## Troubleshooting
+
+### Android Issues
+
+1. **Firebase Messaging Service conflicts**: If you have another library that declares a Firebase Cloud Messaging Service, you may need to disable the one in this SDK.
+
+   In your `app.json` or `app.config.js`:
+
+   ```js
+   {
+     "plugins": [
+       [
+         "@twilio/voice-react-native-sdk",
+         {
+           "disableFirebaseMessagingService": true
+         }
+       ]
      ]
-   };
+   }
    ```
 
-3. **Add Firebase configuration**
-   - Place your `google-services.json` file in the root of your project
-   - The config plugin will copy it to the correct location during the prebuild phase
+2. **Gradle build issues**: If you encounter Gradle build issues related to task dependencies, try cleaning your project completely:
 
-4. **Run the Expo prebuild command**
    ```bash
-   npx expo prebuild
+   cd android
+   ./gradlew clean
+   cd ..
+   npx expo clean
+   npx expo prebuild --clean
    ```
 
-5. **Import and use the Voice module in your app**
-   ```javascript
-   import Voice from '@twilio/voice-react-native-sdk/src/ExpoModule';
-   
-   // Connect to a call
-   const connect = async (accessToken) => {
-     try {
-       await Voice.connect(accessToken);
-       console.log('Connected to call');
-     } catch (error) {
-       console.error('Error connecting to call:', error);
-     }
-   };
-   
-   // Disconnect from a call
-   const disconnect = async (callSid) => {
-     try {
-       await Voice.disconnect(callSid);
-       console.log('Disconnected from call');
-     } catch (error) {
-       console.error('Error disconnecting from call:', error);
-     }
-   };
-   
-   // Accept a call
-   const accept = async (callSid) => {
-     try {
-       await Voice.accept(callSid);
-       console.log('Call accepted');
-     } catch (error) {
-       console.error('Error accepting call:', error);
-     }
-   };
-   
-   // Reject a call
-   const reject = async (callSid) => {
-     try {
-       await Voice.reject(callSid);
-       console.log('Call rejected');
-     } catch (error) {
-       console.error('Error rejecting call:', error);
-     }
-   };
-   ```
+### iOS Issues
 
-### Important Notes
+1. **Missing permissions**: Ensure your app has the required permissions for microphone and push notifications.
 
-1. **Firebase Cloud Messaging**
-   - The SDK uses Firebase Cloud Messaging for incoming calls
-   - Make sure your Firebase project is properly configured
-   - The config plugin will add the necessary permissions and services
+2. **Push notification issues**: Make sure your VoIP Services certificate is valid and properly configured in your Twilio account.
 
-2. **iOS Permissions**
-   - The config plugin will add the necessary permissions to your iOS app
-   - You may need to provide custom permission messages in your app.config.js
+## API Reference
 
-3. **Android Permissions**
-   - The config plugin will add the necessary permissions to your Android app
-   - You may need to request these permissions at runtime in your app
+### VoiceExpo
 
-4. **Known Issues**
-   - There are TypeScript errors with the expo-modules-core package that need to be resolved
-   - These errors are preventing the pre-commit hook from passing
+- `connect(accessToken: string): Promise<string | void>` - Make an outgoing call
+- `disconnect(callSid: string): Promise<boolean | void>` - Disconnect an ongoing call
+- `accept(callSid: string): Promise<boolean | void>` - Accept an incoming call
+- `reject(callSid: string): Promise<boolean | void>` - Reject an incoming call
+- `register(accessToken: string): Promise<boolean | void>` - Register for incoming calls
+- `unregister(accessToken: string): Promise<boolean | void>` - Unregister from incoming calls
 
-## Next Steps
+## Limitations
 
-### 1. Fix TypeScript Errors
-- Resolve TypeScript errors with the expo-modules-core package
-- Consider updating the expo-modules-core package or fixing the type definitions
+1. **Development limitations**: Some features may require testing on physical devices, especially push notifications.
+2. **Expo Go limitations**: This SDK cannot work in Expo Go due to native code requirements. You must use development builds or EAS builds.
 
-### 2. Testing
-- Test the implementation in an Expo app to ensure that all functionality works as expected
-- Test both iOS and Android platforms
-- Test all voice calling features (connect, disconnect, accept, reject)
+## Further Resources
 
-### 3. Documentation
-- Update the README.md to include instructions for using the SDK with Expo
-- Document any specific requirements or limitations when using the SDK with Expo
-
-### 4. CI/CD
-- Update the CI/CD pipeline to include testing with Expo
-- Ensure that the build process works correctly with the new Expo support
-
-### 5. Release
-- Create a new release with the Expo support
-- Update the version number in package.json
-
-### 6. Community Feedback
-- Share the implementation with the community and gather feedback
-- Address any issues or concerns raised by the community
-
-### 7. Maintenance
-- Keep the implementation up-to-date with the latest versions of Expo and React Native
-- Monitor for any breaking changes in Expo or React Native that might affect the implementation
-
-## Conclusion
-
-This implementation provides a solid foundation for using the Twilio Voice React Native SDK with Expo. By following the instructions in this document, you should be able to integrate the SDK into your Expo app and start using Twilio Voice features. The next steps will help ensure that the implementation is robust, well-tested, and well-documented. 
+- [Twilio Voice React Native SDK Documentation](https://www.twilio.com/docs/voice/client/react-native)
+- [Expo Config Plugins Documentation](https://docs.expo.dev/guides/config-plugins/)
+- [Original Expo Support Guide (Issue #496)](https://github.com/twilio/twilio-voice-react-native/issues/496) 

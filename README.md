@@ -31,6 +31,11 @@ Learn how to get started for the [iOS platform](/docs/getting-started-ios.md).
 #### Android
 Learn how to get started for the Android platform if you are using [Java](/docs/getting-started-android-java.md) or [Kotlin](/docs/getting-started-android-kotlin.md).
 
+#### Expo
+Learn how to get started with [Expo](/EXPO_SUPPORT_SUMMARY.md).
+
+**Note**: Expo support is experimental and requires using development builds or EAS builds. See the [Expo Support Summary](/EXPO_SUPPORT_SUMMARY.md) for detailed instructions.
+
 ### Migration Guide
 If you are migrating from a version of the Twilio Voice React Native SDK `< 1.0.0.beta.4` to a version `>= 1.0.0.beta.4`, please see [this](/docs/migration-guide-beta.4.md) document.
 

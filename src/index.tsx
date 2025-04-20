@@ -22,3 +22,7 @@ export { RTCStats } from './type/RTCStats';
 
 import * as TwilioErrors from './error';
 export { TwilioErrors };
+
+// Export Expo module for Expo platform support
+import VoiceExpo from './ExpoModule';
+export { VoiceExpo };

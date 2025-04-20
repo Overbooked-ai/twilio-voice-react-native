@@ -91,25 +91,100 @@ dependencies {
   }
 }
 
-// Add this new block to explicitly declare input/output dependencies
-android.libraryVariants.all { variant ->
-    def generateTaskProvider = tasks.named("generate${variant.name.capitalize()}ResValues")
-    def packageTaskProvider = tasks.named("package${variant.name.capitalize()}Resources")
-
-    packageTaskProvider.configure { packageTask ->
-        // Declare the output directory of generateTask as an input directory for packageTask
-        // Use the task provider to ensure generateTask is configured before we access its output
-        generateTaskProvider.configure { generateTask ->
-             // Check if output files exist before accessing singleFile
-             if (!generateTask.outputs.files.isEmpty()) {
-                 def outputDir = generateTask.outputs.files.singleFile
-                 packageTask.inputs.dir(outputDir).withPathSensitivity(PathSensitivity.RELATIVE)
-                 project.logger.quiet("AGP Task Dependency Fix (Input/Output): Configuring for variant '${variant.name}'")
-             } else {
-                project.logger.warn("AGP Task Dependency Fix (Input/Output): No output files found for ${generateTask.name} for variant '${variant.name}'")
-             }
+// COMPREHENSIVE FIX FOR GRADLE TASK DEPENDENCIES
+// This addresses the issue with ':twilio_voice-react-native-sdk:packageDebugResources' using 
+// output from ':twilio-voice-react-native-sdk:generateDebugResValues' without declaring dependency
+project.afterEvaluate {
+    project.logger.quiet("TWILIO VOICE SDK: Applying comprehensive Gradle task fix")
+    
+    // Get all Android build variants (debug, release, etc.)
+    if (android.hasProperty('applicationVariants')) {
+        android.applicationVariants.all { applyTaskDependencyFix(it) }
+    } else if (android.hasProperty('libraryVariants')) {
+        android.libraryVariants.all { applyTaskDependencyFix(it) }
+    }
+    
+    // Apply fix using multiple approaches for all possible task name patterns
+    def taskNames = ['generate', 'package']
+    def buildTypes = ['Debug', 'Release']
+    def resourceTypes = ['ResValues', 'Resources']
+    
+    // Handle both naming patterns ('_' and '-') 
+    def moduleNamePatterns = [
+        'twilio_voice-react-native-sdk', 
+        'twilio-voice-react-native-sdk'
+    ]
+    
+    buildTypes.each { buildType ->
+        resourceTypes.each { resType ->
+            moduleNamePatterns.each { modulePattern ->
+                def genTaskName = ":${modulePattern}:generate${buildType}${resType}"
+                def pkgTaskName = ":${modulePattern}:package${buildType}${resType}"
+                
+                try {
+                    def genTask = tasks.findByPath(genTaskName)
+                    def pkgTask = tasks.findByPath(pkgTaskName) 
+                    
+                    if (genTask != null && pkgTask != null) {
+                        project.logger.quiet("TWILIO VOICE SDK: Found tasks - ${genTaskName} and ${pkgTaskName}")
+                        
+                        // Method 1: Direct dependsOn
+                        pkgTask.dependsOn(genTask)
+                        
+                        // Method 2: Input/Output relationship
+                        if (genTask.hasProperty('outputs') && genTask.outputs.hasProperty('files')) {
+                            def outputFiles = genTask.outputs.files
+                            if (outputFiles != null && !outputFiles.isEmpty()) {
+                                def outputDir = outputFiles.singleFile
+                                if (outputDir != null) {
+                                    pkgTask.inputs.dir(outputDir).withPathSensitivity(PathSensitivity.RELATIVE)
+                                    project.logger.quiet("TWILIO VOICE SDK: Configured input/output relationship for ${pkgTaskName}")
+                                }
+                            }
+                        }
+                        
+                        // Method 3: mustRunAfter (as a fallback)
+                        pkgTask.mustRunAfter(genTask)
+                    }
+                } catch (Exception e) {
+                    project.logger.quiet("TWILIO VOICE SDK: Exception handling tasks ${genTaskName} and ${pkgTaskName}: ${e.message}")
+                }
+            }
         }
-        // Add dependsOn as a fallback (optional, Input/Output is preferred)
-        // packageTask.dependsOn(generateTaskProvider)
+    }
+}
+
+// Helper method to apply fix to a specific variant
+def applyTaskDependencyFix(variant) {
+    try {
+        def variantName = variant.name.capitalize()
+        def generateResValuesTask = tasks.findByName("generate${variantName}ResValues")
+        def packageResourcesTask = tasks.findByName("package${variantName}Resources")
+        
+        if (generateResValuesTask != null && packageResourcesTask != null) {
+            project.logger.quiet("TWILIO VOICE SDK: Found variant tasks - generate${variantName}ResValues and package${variantName}Resources")
+            
+            // Method 1: Direct dependsOn
+            packageResourcesTask.dependsOn(generateResValuesTask)
+            
+            // Method 2: Input/Output relationship
+            def outputFiles = generateResValuesTask.outputs.files
+            if (outputFiles != null && !outputFiles.isEmpty()) {
+                try {
+                    def outputDir = outputFiles.singleFile
+                    if (outputDir != null) {
+                        packageResourcesTask.inputs.dir(outputDir).withPathSensitivity(PathSensitivity.RELATIVE)
+                        project.logger.quiet("TWILIO VOICE SDK: Configured input/output relationship for ${variantName}")
+                    }
+                } catch (Exception e) {
+                    project.logger.quiet("TWILIO VOICE SDK: Could not access output directory: ${e.message}")
+                }
+            }
+            
+            // Method 3: mustRunAfter (as a fallback)
+            packageResourcesTask.mustRunAfter(generateResValuesTask)
+        }
+    } catch (Exception e) {
+        project.logger.quiet("TWILIO VOICE SDK: Exception in applyTaskDependencyFix: ${e.message}")
     }
 }

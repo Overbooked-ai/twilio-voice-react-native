@@ -1,4 +1,4 @@
-const { withPlugins, withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
+const { withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -21,11 +21,19 @@ const withTwilioVoiceAndroid = (config) => {
       if (!config.modResults.manifest['uses-permission']) {
         config.modResults.manifest['uses-permission'] = [];
       }
-      config.modResults.manifest['uses-permission'].push({
-        $: {
-          'android:name': permission
-        }
-      });
+      
+      // Check if permission already exists
+      const exists = config.modResults.manifest['uses-permission'].some(
+        p => p.$['android:name'] === permission
+      );
+      
+      if (!exists) {
+        config.modResults.manifest['uses-permission'].push({
+          $: {
+            'android:name': permission
+          }
+        });
+      }
     });
 
     // Add required services
@@ -33,12 +41,19 @@ const withTwilioVoiceAndroid = (config) => {
       mainApplication.service = [];
     }
 
-    mainApplication.service.push({
-      $: {
-        'android:name': 'com.twilio.voice.VoiceFirebaseMessagingService',
-        'android:exported': 'false'
-      }
-    });
+    // Check if service already exists
+    const serviceExists = mainApplication.service.some(
+      s => s.$['android:name'] === 'com.twiliovoicereactnative.VoiceFirebaseMessagingService'
+    );
+    
+    if (!serviceExists) {
+      mainApplication.service.push({
+        $: {
+          'android:name': 'com.twiliovoicereactnative.VoiceFirebaseMessagingService',
+          'android:exported': 'false'
+        }
+      });
+    }
 
     return config;
   });
@@ -54,6 +69,24 @@ const withTwilioVoiceAndroid = (config) => {
         
         // Check if Google Services Plugin is already applied
         if (!buildGradleContent.includes('apply plugin: \'com.google.gms.google-services\'')) {
+          // Add the classpath dependency if not present
+          if (!buildGradleContent.includes('com.google.gms:google-services:')) {
+            const buildScriptIndex = buildGradleContent.indexOf('buildscript {');
+            if (buildScriptIndex !== -1) {
+              const dependenciesBlock = buildGradleContent.indexOf('dependencies {', buildScriptIndex);
+              if (dependenciesBlock !== -1) {
+                const closeBracketIndex = buildGradleContent.indexOf('}', dependenciesBlock);
+                if (closeBracketIndex !== -1) {
+                  const insertion = '        classpath "com.google.gms:google-services:4.3.15"\n';
+                  buildGradleContent = 
+                    buildGradleContent.slice(0, closeBracketIndex) + 
+                    insertion + 
+                    buildGradleContent.slice(closeBracketIndex);
+                }
+              }
+            }
+          }
+          
           // Add Google Services Plugin
           buildGradleContent = buildGradleContent.replace(
             /apply plugin: ['"]com\.android\.application['"]/,
@@ -93,4 +126,4 @@ const withTwilioVoiceAndroid = (config) => {
   return config;
 };
 
-module.exports = withPlugins; 
+module.exports = withTwilioVoiceAndroid; 
