@@ -90,3 +90,15 @@ dependencies {
     }
   }
 }
+
+// Add dependency between resource generation and packaging tasks
+afterEvaluate {
+  android.libraryVariants.all { variant ->
+    def generateResValuesTask = tasks.findByName("generate${variant.name.capitalize()}ResValues")
+    def packageResourcesTask = tasks.findByName("package${variant.name.capitalize()}Resources")
+
+    if (generateResValuesTask != null && packageResourcesTask != null) {
+      packageResourcesTask.dependsOn generateResValuesTask
+    }
+  }
+}
