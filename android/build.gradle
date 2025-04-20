@@ -9,9 +9,9 @@ buildscript {
     'audioSwitch'        : '1.1.8',
     'firebaseMessaging'  : '23.4.0',
     'kotlin'             : '1.9.24',
-    minSdk: 21,
-    compileSdk: 34,
-    targetSdk: 34
+    'minSdk'             : 21,
+    'compileSdk'         : 34,
+    'targetSdk'          : 34
   ]
   if (project == rootProject) {
     repositories {
@@ -36,10 +36,11 @@ def safeExtGet(prop, fallback) {
 
 android {
   namespace 'com.twiliovoicereactnative'
-  compileSdk safeExtGet('TwilioVoiceReactNative_compileSdkVersion', 34)
+  compileSdkVersion safeExtGet('TwilioVoiceReactNative_compileSdkVersion', versions.compileSdk)
+  
   defaultConfig {
-    minSdkVersion safeExtGet('TwilioVoiceReactNative_minSdkVersion', 23)
-    targetSdkVersion safeExtGet('TwilioVoiceReactNative_targetSdkVersion', 34)
+    minSdkVersion safeExtGet('TwilioVoiceReactNative_minSdkVersion', versions.minSdk)
+    targetSdkVersion safeExtGet('TwilioVoiceReactNative_targetSdkVersion', versions.targetSdk)
     versionCode 1
     versionName "1.0"
   }
@@ -49,41 +50,54 @@ android {
       minifyEnabled false
     }
   }
+  
   lintOptions {
     disable 'GradleCompatible'
   }
+  
   compileOptions {
     sourceCompatibility versions.java
     targetCompatibility versions.java
   }
+  
   buildFeatures {
-    // for buildconfig construction
     buildConfig true
   }
+  
   kotlinOptions {
-    jvmTarget = '17'
+    jvmTarget = '11'
   }
 }
 
 repositories {
   google()
   mavenCentral()
-  maven {
-    url 'https://maven.google.com/'
-    name 'Google'
-  }
 }
 
 dependencies {
-  //noinspection GradleDynamicVersion
+  // React Native dependency
   implementation "com.facebook.react:react-native:+"  // From node_modules
+  
+  // Twilio Voice Android SDK
   implementation "com.twilio:voice-android:${versions.voiceAndroid}"
+  
+  // AndroidX dependencies
   implementation "androidx.core:core:${versions.androidxCore}"
   implementation "androidx.lifecycle:lifecycle-extensions:${versions.androidxLifecycle}"
+  
+  // Firebase dependencies for push notifications
   implementation "com.google.firebase:firebase-messaging:${versions.firebaseMessaging}"
+  
+  // Audio management
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
-  implementation 'com.google.android.material:material:1.1.0'
+  
+  // Expo modules support
+  implementation "expo.modules.core:core:1.0.0"
+  
+  // Material design components
+  implementation 'com.google.android.material:material:1.6.0'
 
+  // Kotlin stdlib compatibility
   constraints {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
       because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
@@ -91,43 +105,33 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
       because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
     }
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.0") {
-      because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
-    }
   }
 }
 
-// SAFER GRADLE TASK DEPENDENCY FIX - USING TASK GRAPH HOOKS
-// This addresses the issue with task dependencies without trying to directly configure tasks
-gradle.taskGraph.whenReady { taskGraph ->
-  println("TWILIO VOICE SDK: Applying safer Gradle task dependency fix using task graph hooks")
-  
-  // Process all tasks in the graph to find resource tasks
-  taskGraph.allTasks.each { task ->
-    def taskPath = task.path
+// Make sure the resources task gets executed before packaging resources
+afterEvaluate {
+  android.buildTypes.each { buildType ->
+    def buildTypeName = buildType.name.capitalize()
     
-    // Look for packageDebugResources and packageReleaseResources tasks
-    if (taskPath.contains("packageDebugResources") || taskPath.contains("packageReleaseResources")) {
-      // Find corresponding generate tasks
-      def prefix = taskPath.substring(0, taskPath.lastIndexOf(':') + 1)
-      def buildType = taskPath.contains("Debug") ? "Debug" : "Release"
-      def generateResValuesPath = "${prefix}generate${buildType}ResValues"
-      
-      // Set up task dependency if the generate task exists
-      def generateTask = taskGraph.allTasks.find { it.path == generateResValuesPath }
-      if (generateTask != null) {
-        println("TWILIO VOICE SDK: Adding dependency - ${taskPath} depends on ${generateResValuesPath}")
-        task.dependsOn(generateTask)
+    // Generate task names for packageResources and generateResValues
+    def packageResourcesTaskName = "package${buildTypeName}Resources"
+    def generateResValuesTaskName = "generate${buildTypeName}ResValues"
+    
+    // Add dependency only if both tasks exist
+    if (tasks.findByName(packageResourcesTaskName) != null && 
+        tasks.findByName(generateResValuesTaskName) != null) {
+      tasks.named(packageResourcesTaskName).configure {
+        dependsOn(tasks.named(generateResValuesTaskName))
       }
     }
   }
 }
 
-// Add custom Gradle property to disable implicit dependency validation
-ext.android.disableImplicitDependencyValidation = true
-
-// Add a property in the Android extension to serve the same purpose
-android.aaptOptions.additionalParameters = [
-  "--warn-manifest-validation",
-  "--no-version-vectors"
-]
+// Disabling implicit dependency validation to avoid task graph issues
+gradle.projectsEvaluated {
+  tasks.withType(com.android.build.gradle.internal.tasks.AndroidVariantTask) { task ->
+    task.dependsOn = task.dependsOn.findAll { 
+      it != null && it.toString() != 'null' 
+    }
+  }
+}
