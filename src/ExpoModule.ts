@@ -1,104 +1,200 @@
+import { Platform } from 'react-native';
 import { requireNativeModule } from 'expo-modules-core';
-import { Platform, NativeModules } from 'react-native';
-
-// Get the appropriate native module based on platform
-const ExpoTwilioVoice = Platform.OS === 'android' 
-  ? requireNativeModule('TwilioVoice') 
-  : null;
+import type { CallInvite } from './CallInvite';
+import type { Call } from './Call';
+import { NativeModule as RNNativeModule } from './common';
 
 /**
- * Expo-compatible Voice module that works in both Expo and React Native environments
+ * Interface for the Expo native module
  */
-class VoiceExpo {
-  /**
-   * Connect to a Twilio call with the provided access token
-   * @param accessToken The Twilio access token
-   * @returns A promise that resolves when the call is connected
-   */
-  static async connect(accessToken: string): Promise<string | void> {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.voice_connect(accessToken);
-    } else if (Platform.OS === 'ios') {
-      // Use existing iOS implementation
-      return NativeModules.TwilioVoiceReactNative.connect(accessToken);
+interface TwilioVoiceExpoModule {
+  voice_connect(accessToken: string, params?: Record<string, string>, displayName?: string): string | null;
+  voice_disconnect(callUuid: string): boolean;
+  voice_mute(callUuid: string, isMuted: boolean): boolean;
+  voice_send_digits(callUuid: string, digits: string): boolean;
+  voice_hold(callUuid: string, onHold: boolean): boolean;
+  voice_get_call_state(callUuid: string): string | null;
+  voice_register(accessToken: string, fcmToken?: string): boolean;
+  voice_unregister(accessToken: string, fcmToken?: string): boolean;
+  voice_handle_notification(payload: Record<string, any>): boolean;
+  voice_is_twilio_notification(payload: Record<string, any>): boolean;
+}
+
+/**
+ * The Expo module interface for the Twilio Voice SDK
+ */
+class ExpoModuleInterface {
+  private androidExpoNativeModule: TwilioVoiceExpoModule | null = null;
+
+  constructor() {
+    // Only initialize the Android Expo module on Android
+    if (Platform.OS === 'android') {
+      try {
+        this.androidExpoNativeModule = requireNativeModule('TwilioVoiceModule');
+      } catch (e) {
+        console.error('Failed to load Expo native module for Twilio Voice:', e);
+      }
     }
-    throw new Error('Platform not supported');
   }
 
   /**
-   * Disconnect an ongoing call
-   * @param callSid The SID of the call to disconnect
-   * @returns A promise that resolves when the call is disconnected
+   * Checks if we're running in an Expo environment
    */
-  static async disconnect(callSid: string): Promise<boolean | void> {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.voice_disconnect(callSid);
-    } else if (Platform.OS === 'ios') {
-      // Use existing iOS implementation
-      return NativeModules.TwilioVoiceReactNative.disconnect(callSid);
-    }
-    throw new Error('Platform not supported');
+  isExpoEnvironment(): boolean {
+    return Platform.OS === 'android' && this.androidExpoNativeModule !== null;
   }
 
   /**
-   * Accept an incoming call
-   * @param callSid The SID of the call to accept
-   * @returns A promise that resolves when the call is accepted
+   * Makes an outgoing call
+   * @param accessToken JWT token used to authenticate with Twilio
+   * @param params Parameters for the call
+   * @param displayName Display name for the call shown in notifications
+   * @returns UUID of the created call or null if the call failed
    */
-  static async accept(callSid: string): Promise<boolean | void> {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.voice_accept(callSid);
+  async connect(
+    accessToken: string,
+    params?: Record<string, string>,
+    displayName?: string
+  ): Promise<string | null> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_connect(accessToken, params, displayName);
     } else if (Platform.OS === 'ios') {
-      // Use existing iOS implementation
-      return NativeModules.TwilioVoiceReactNative.accept(callSid);
+      // On iOS, we use the React Native module directly
+      return RNNativeModule.makeCall(accessToken, params || {});
     }
-    throw new Error('Platform not supported');
+    return null;
   }
 
   /**
-   * Reject an incoming call
-   * @param callSid The SID of the call to reject
-   * @returns A promise that resolves when the call is rejected
+   * Disconnects a specific call
+   * @param callUuid UUID of the call to disconnect
+   * @returns Whether the call was successfully disconnected
    */
-  static async reject(callSid: string): Promise<boolean | void> {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.voice_reject(callSid);
+  async disconnect(callUuid: string): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_disconnect(callUuid);
     } else if (Platform.OS === 'ios') {
-      // Use existing iOS implementation
-      return NativeModules.TwilioVoiceReactNative.reject(callSid);
+      return !!RNNativeModule.disconnectCall(callUuid);
     }
-    throw new Error('Platform not supported');
+    return false;
   }
 
   /**
-   * Register for incoming calls
-   * @param accessToken The Twilio access token
-   * @returns A promise that resolves when registration is complete
+   * Mutes or unmutes a specific call
+   * @param callUuid UUID of the call to mute/unmute
+   * @param isMuted Whether the call should be muted
+   * @returns Whether the mute operation was successful
    */
-  static async register(accessToken: string): Promise<boolean | void> {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.register_for_calls(accessToken);
+  async mute(callUuid: string, isMuted: boolean): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_mute(callUuid, isMuted);
     } else if (Platform.OS === 'ios') {
-      // Use existing iOS implementation
-      return NativeModules.TwilioVoiceReactNative.registerForCalls(accessToken);
+      return !!RNNativeModule.muteCall(callUuid, isMuted);
     }
-    throw new Error('Platform not supported');
+    return false;
   }
 
   /**
-   * Unregister from incoming calls
-   * @param accessToken The Twilio access token
-   * @returns A promise that resolves when unregistration is complete
+   * Sends DTMF tones on a specific call
+   * @param callUuid UUID of the call
+   * @param digits DTMF digits to send
+   * @returns Whether the digits were successfully sent
    */
-  static async unregister(accessToken: string): Promise<boolean | void> {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.unregister_for_calls(accessToken);
+  async sendDigits(callUuid: string, digits: string): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_send_digits(callUuid, digits);
     } else if (Platform.OS === 'ios') {
-      // Use existing iOS implementation
-      return NativeModules.TwilioVoiceReactNative.unregisterForCalls(accessToken);
+      return !!RNNativeModule.sendDigits(callUuid, digits);
     }
-    throw new Error('Platform not supported');
+    return false;
+  }
+
+  /**
+   * Holds or unholds a specific call
+   * @param callUuid UUID of the call
+   * @param onHold Whether the call should be on hold
+   * @returns Whether the hold operation was successful
+   */
+  async hold(callUuid: string, onHold: boolean): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_hold(callUuid, onHold);
+    } else if (Platform.OS === 'ios') {
+      return !!RNNativeModule.holdCall(callUuid, onHold);
+    }
+    return false;
+  }
+
+  /**
+   * Gets the current state of a specific call
+   * @param callUuid UUID of the call
+   * @returns The current state of the call or null if the call doesn't exist
+   */
+  async getCallState(callUuid: string): Promise<string | null> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_get_call_state(callUuid);
+    } else if (Platform.OS === 'ios') {
+      return RNNativeModule.getCallState(callUuid);
+    }
+    return null;
+  }
+
+  /**
+   * Registers for push notifications with Twilio Voice
+   * @param accessToken JWT token used to authenticate with Twilio
+   * @param fcmToken FCM token for push notifications (Android only)
+   * @returns Whether the registration was successful
+   */
+  async register(accessToken: string, fcmToken?: string): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_register(accessToken, fcmToken);
+    } else if (Platform.OS === 'ios') {
+      return !!RNNativeModule.registerForCallInvites(accessToken);
+    }
+    return false;
+  }
+
+  /**
+   * Unregisters from push notifications with Twilio Voice
+   * @param accessToken JWT token used to authenticate with Twilio
+   * @param fcmToken FCM token for push notifications (Android only)
+   * @returns Whether the unregistration was successful
+   */
+  async unregister(accessToken: string, fcmToken?: string): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_unregister(accessToken, fcmToken);
+    } else if (Platform.OS === 'ios') {
+      return !!RNNativeModule.unregisterForCallInvites(accessToken);
+    }
+    return false;
+  }
+
+  /**
+   * Handles an incoming push notification
+   * @param payload Push notification payload
+   * @returns Whether the notification was handled
+   */
+  async handleNotification(payload: Record<string, any>): Promise<boolean> {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_handle_notification(payload);
+    } else if (Platform.OS === 'ios') {
+      return !!RNNativeModule.handlePushNotification(payload);
+    }
+    return false;
+  }
+
+  /**
+   * Checks if a push notification is a valid Twilio Voice notification
+   * @param payload Push notification payload
+   * @returns Whether the notification is a valid Twilio Voice notification
+   */
+  isTwilioNotification(payload: Record<string, any>): boolean {
+    if (Platform.OS === 'android' && this.androidExpoNativeModule) {
+      return this.androidExpoNativeModule.voice_is_twilio_notification(payload);
+    } else if (Platform.OS === 'ios') {
+      return !!RNNativeModule.isTwilioNotification(payload);
+    }
+    return false;
   }
 }
 
-export default VoiceExpo; 
+export const ExpoModule = new ExpoModuleInterface(); 

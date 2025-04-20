@@ -68,6 +68,36 @@ npx expo run:android
 npx expo run:ios
 ```
 
+### 4. Troubleshooting Android Gradle Issues
+
+If you encounter Gradle build errors related to task dependencies, try the following:
+
+```bash
+# Make sure to clean thoroughly before rebuilding
+cd android
+./gradlew clean
+cd ..
+rm -rf node_modules
+npm install  # Or yarn install or pnpm install
+
+# Then rebuild
+npx expo clean
+npx expo prebuild --clean --platform android
+npx expo run:android
+```
+
+Common error messages you might see:
+- "Task uses this output without declaring a dependency"
+- "Could not create task ':twilio_voice-react-native-sdk:packageDebugResources'"
+- "DefaultTaskContainer#NamedDomainObjectProvider.configure(Action) on task set cannot be executed"
+
+These errors are related to how Gradle handles task dependencies and have been addressed in this fork with special Gradle configuration. If problems persist, try adding this to your app's `android/build.gradle`:
+
+```gradle
+// Add this at the end of your app's android/build.gradle file
+ext.android.disableImplicitDependencyValidation = true
+```
+
 ## Usage
 
 ### Import and Initialize
@@ -179,6 +209,8 @@ useEffect(() => {
    npx expo prebuild --clean
    ```
 
+   This fork includes special fixes for common Gradle task dependency issues. If you're using this fork and still encountering problems, please refer to the [PING_PONG.md](./PING_PONG.md) file for the latest fixes and workarounds.
+
 ### iOS Issues
 
 1. **Missing permissions**: Ensure your app has the required permissions for microphone and push notifications.
@@ -205,4 +237,5 @@ useEffect(() => {
 
 - [Twilio Voice React Native SDK Documentation](https://www.twilio.com/docs/voice/client/react-native)
 - [Expo Config Plugins Documentation](https://docs.expo.dev/guides/config-plugins/)
-- [Original Expo Support Guide (Issue #496)](https://github.com/twilio/twilio-voice-react-native/issues/496) 
+- [Original Expo Support Guide (Issue #496)](https://github.com/twilio/twilio-voice-react-native/issues/496)
+- [Gradle Task Dependencies Documentation](https://docs.gradle.org/current/userguide/validation_problems.html#implicit_dependency) 

@@ -1,171 +1,241 @@
 package com.twiliovoicereactnative
 
-import expo.modules.kotlin.modules.Module
-import expo.modules.kotlin.modules.ModuleDefinition
-import android.util.Log
+import android.content.Context
+import android.os.Bundle
+import androidx.annotation.Keep
 import com.twilio.voice.Call
-import com.twilio.voice.CallException
-import com.twilio.voice.CallInvite
 import com.twilio.voice.ConnectOptions
 import com.twilio.voice.Voice
-import java.util.UUID
-import com.facebook.react.bridge.ReactApplicationContext
+import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.modules.ModuleDefinition
+import java.util.*
+import kotlin.collections.HashMap
 
+/**
+ * Expo module that exposes Twilio Voice SDK functionality to JavaScript.
+ */
+@Keep
 class ExpoModule : Module() {
-    private val TAG = "TwilioVoiceExpoModule"
-
     override fun definition() = ModuleDefinition {
-        Name("TwilioVoice")
+        Name("TwilioVoiceModule")
 
-        OnCreate {
+        /**
+         * Make an outgoing call with Twilio Voice
+         * @param accessToken JWT token used to authenticate with Twilio
+         * @param from Optional from parameter for the TwiML
+         * @param to Required parameter indicating who to call
+         * @param displayName Optional display name for the call shown in notifications
+         * @return UUID of the created call
+         */
+        Function("voice_connect") { accessToken: String, params: Map<String, String>?, displayName: String? ->
+            val context = appContext.reactContext ?: return@Function null
+
+            // Create the connect options with the provided access token
+            val connectOptionsBuilder = ConnectOptions.Builder(accessToken)
+            
+            // Add any additional parameters if provided
+            if (params != null) {
+                connectOptionsBuilder.params(params)
+            }
+
+            val connectOptions = connectOptionsBuilder.build()
+
+            // Generate a UUID for this call
+            val uuid = UUID.randomUUID()
+            
+            // Create a call listener to handle call events
+            val callListenerProxy = CallListenerProxy(uuid, context)
+            
+            // Make the call using the Voice API
+            val call = Voice.connect(context, connectOptions, callListenerProxy)
+            
+            // Create a record of the call
+            val callDisplayName = displayName ?: params?.get("to") ?: "Unknown"
+            val callParams = params ?: HashMap()
+            
+            val callRecord = CallRecordDatabase.CallRecord(
+                uuid,
+                call,
+                callDisplayName,
+                callParams,
+                CallRecord.Direction.OUTGOING,
+                callDisplayName
+            )
+            
+            // Add the call to the database
+            VoiceApplicationProxy.getCallRecordDatabase().add(callRecord)
+            
+            // Return the UUID as a string
+            uuid.toString()
+        }
+
+        /**
+         * Disconnect a specific call by its UUID
+         * @param callUuid The UUID of the call to disconnect
+         */
+        Function("voice_disconnect") { callUuid: String ->
             try {
-                Log.d(TAG, "Initializing TwilioVoice Expo Module")
-                val reactContext = appContext.reactContext
-                if (reactContext is ReactApplicationContext) {
-                    val emitter = VoiceApplicationProxy.getJSEventEmitter()
-                    if (emitter != null) {
-                        emitter.setContext(reactContext)
-                        Log.d(TAG, "Successfully set context for JSEventEmitter")
-                    } else {
-                        Log.e(TAG, "Error: JSEventEmitter is null - could not set context")
+                val uuid = UUID.fromString(callUuid)
+                val callRecord = VoiceApplicationProxy.getCallRecordDatabase().get(uuid)
+                
+                callRecord?.call?.disconnect()
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Mute or unmute a specific call
+         * @param callUuid The UUID of the call to mute/unmute
+         * @param isMuted Whether the call should be muted
+         */
+        Function("voice_mute") { callUuid: String, isMuted: Boolean ->
+            try {
+                val uuid = UUID.fromString(callUuid)
+                val callRecord = VoiceApplicationProxy.getCallRecordDatabase().get(uuid)
+                
+                callRecord?.call?.mute(isMuted)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Send DTMF tones on a specific call
+         * @param callUuid The UUID of the call
+         * @param digits The DTMF digits to send
+         */
+        Function("voice_send_digits") { callUuid: String, digits: String ->
+            try {
+                val uuid = UUID.fromString(callUuid)
+                val callRecord = VoiceApplicationProxy.getCallRecordDatabase().get(uuid)
+                
+                callRecord?.call?.sendDigits(digits)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Hold or unhold a specific call
+         * @param callUuid The UUID of the call
+         * @param onHold Whether the call should be on hold
+         */
+        Function("voice_hold") { callUuid: String, onHold: Boolean ->
+            try {
+                val uuid = UUID.fromString(callUuid)
+                val callRecord = VoiceApplicationProxy.getCallRecordDatabase().get(uuid)
+                
+                callRecord?.call?.hold(onHold)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Gets the current call state for a specific call
+         * @param callUuid The UUID of the call
+         * @return The call state or null if the call doesn't exist
+         */
+        Function("voice_get_call_state") { callUuid: String ->
+            try {
+                val uuid = UUID.fromString(callUuid)
+                val callRecord = VoiceApplicationProxy.getCallRecordDatabase().get(uuid)
+                
+                callRecord?.call?.state?.name
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        /**
+         * Register for push notifications with Twilio Voice
+         * @param accessToken JWT token used to authenticate with Twilio
+         * @param fcmToken FCM token for push notifications
+         */
+        Function("voice_register") { accessToken: String, fcmToken: String? ->
+            val context = appContext.reactContext ?: return@Function false
+            
+            try {
+                // If FCM token is provided, register for push notifications
+                if (fcmToken != null) {
+                    Voice.register(accessToken, Voice.RegistrationChannel.FCM, fcmToken, context)
+                }
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Unregister from push notifications with Twilio Voice
+         * @param accessToken JWT token used to authenticate with Twilio
+         * @param fcmToken FCM token for push notifications
+         */
+        Function("voice_unregister") { accessToken: String, fcmToken: String? ->
+            val context = appContext.reactContext ?: return@Function false
+            
+            try {
+                // If FCM token is provided, unregister from push notifications
+                if (fcmToken != null) {
+                    Voice.unregister(accessToken, Voice.RegistrationChannel.FCM, fcmToken, context)
+                }
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Handle an incoming call push notification
+         * @param payload The push notification payload
+         */
+        Function("voice_handle_notification") { payload: Map<String, Any> ->
+            val context = appContext.reactContext ?: return@Function false
+            
+            try {
+                // Convert the payload to a Bundle
+                val bundle = Bundle()
+                payload.forEach { (key, value) ->
+                    when (value) {
+                        is String -> bundle.putString(key, value)
+                        is Int -> bundle.putInt(key, value)
+                        is Boolean -> bundle.putBoolean(key, value)
+                        // Add more type conversions if needed
                     }
-                } else {
-                    Log.e(TAG, "Error: Could not get ReactApplicationContext")
                 }
+
+                // Process the notification using the Voice SDK
+                Voice.handleMessage(context, bundle)
+                true
             } catch (e: Exception) {
-                Log.e(TAG, "Error initializing TwilioVoice Expo Module: ${e.message}", e)
+                false
             }
         }
 
-        Function("voice_connect") { accessToken: String ->
-            try {
-                Log.d(TAG, "Attempting to make outgoing call with access token")
-                val context = appContext.reactContext
-                if (context == null) {
-                    Log.e(TAG, "Error: React context is null")
-                    throw IllegalStateException("React context is null")
+        /**
+         * Check if a push notification is a valid Twilio Voice notification
+         * @param payload The push notification payload
+         * @return Whether the notification is a valid Twilio Voice notification
+         */
+        Function("voice_is_twilio_notification") { payload: Map<String, Any> ->
+            // Convert the payload to a Bundle
+            val bundle = Bundle()
+            payload.forEach { (key, value) ->
+                when (value) {
+                    is String -> bundle.putString(key, value)
+                    is Int -> bundle.putInt(key, value)
+                    is Boolean -> bundle.putBoolean(key, value)
+                    // Add more type conversions if needed
                 }
-
-                val connectOptions = ConnectOptions.Builder(accessToken)
-                    .enableInsights(true)
-                    .build()
-                    
-                val uuid = UUID.randomUUID()
-                val callListenerProxy = CallListenerProxy(uuid, context)
-                
-                val call = Voice.connect(context, connectOptions, callListenerProxy)
-                
-                // Store the call record in the database
-                val callRecord = CallRecordDatabase.CallRecord(
-                    uuid,
-                    call,
-                    "Outgoing Call", // This could be parameterized in the future
-                    HashMap(),
-                    CallRecord.Direction.Outgoing,
-                    "Outgoing Call" // This could be parameterized in the future
-                )
-
-                VoiceApplicationProxy.getCallRecordDatabase.add(callRecord)
-                Log.d(TAG, "Successfully initiated outgoing call with UUID: $uuid")
-                
-                return@Function uuid.toString()
-            } catch (e: CallException) {
-                Log.e(TAG, "Error making outgoing call: ${e.message}", e)
-                throw e
-            } catch (e: Exception) {
-                Log.e(TAG, "Unexpected error making outgoing call: ${e.message}", e)
-                throw e
             }
-        }
 
-        Function("voice_disconnect") { callSid: String ->
-            try {
-                Log.d(TAG, "Attempting to disconnect call with SID: $callSid")
-                val context = appContext.reactContext
-                if (context == null) {
-                    Log.e(TAG, "Error: React context is null")
-                    throw IllegalStateException("React context is null")
-                }
-
-                val result = Voice.disconnect(context, callSid)
-                Log.d(TAG, "Call disconnect result: $result")
-                return@Function result
-            } catch (e: Exception) {
-                Log.e(TAG, "Error disconnecting call: ${e.message}", e)
-                throw e
-            }
-        }
-
-        Function("voice_accept") { callSid: String ->
-            try {
-                Log.d(TAG, "Attempting to accept incoming call with SID: $callSid")
-                val context = appContext.reactContext
-                if (context == null) {
-                    Log.e(TAG, "Error: React context is null")
-                    throw IllegalStateException("React context is null")
-                }
-
-                val result = Voice.accept(context, callSid)
-                Log.d(TAG, "Call accept result: $result")
-                return@Function result
-            } catch (e: Exception) {
-                Log.e(TAG, "Error accepting call: ${e.message}", e)
-                throw e
-            }
-        }
-
-        Function("voice_reject") { callSid: String ->
-            try {
-                Log.d(TAG, "Attempting to reject incoming call with SID: $callSid")
-                val context = appContext.reactContext
-                if (context == null) {
-                    Log.e(TAG, "Error: React context is null")
-                    throw IllegalStateException("React context is null")
-                }
-
-                val result = Voice.reject(context, callSid)
-                Log.d(TAG, "Call reject result: $result")
-                return@Function result
-            } catch (e: Exception) {
-                Log.e(TAG, "Error rejecting call: ${e.message}", e)
-                throw e
-            }
-        }
-        
-        Function("register_for_calls") { accessToken: String ->
-            try {
-                Log.d(TAG, "Attempting to register for calls with access token")
-                val context = appContext.reactContext
-                if (context == null) {
-                    Log.e(TAG, "Error: React context is null")
-                    throw IllegalStateException("React context is null")
-                }
-                
-                Voice.register(accessToken, null, context)
-                Log.d(TAG, "Successfully registered for calls")
-                return@Function true
-            } catch (e: Exception) {
-                Log.e(TAG, "Error registering for calls: ${e.message}", e)
-                throw e
-            }
-        }
-        
-        Function("unregister_for_calls") { accessToken: String ->
-            try {
-                Log.d(TAG, "Attempting to unregister from calls")
-                val context = appContext.reactContext
-                if (context == null) {
-                    Log.e(TAG, "Error: React context is null")
-                    throw IllegalStateException("React context is null")
-                }
-                
-                Voice.unregister(accessToken, null, context)
-                Log.d(TAG, "Successfully unregistered from calls")
-                return@Function true
-            } catch (e: Exception) {
-                Log.e(TAG, "Error unregistering from calls: ${e.message}", e)
-                throw e
-            }
+            // Check if the notification is a valid Twilio Voice notification
+            Voice.isValidMessage(bundle)
         }
     }
 } 

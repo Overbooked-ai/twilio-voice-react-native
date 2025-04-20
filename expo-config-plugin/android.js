@@ -1,127 +1,167 @@
-const { withAndroidManifest, withDangerousMod } = require('@expo/config-plugins');
+const {
+  withAndroidManifest,
+  withProjectBuildGradle,
+  withAppBuildGradle,
+  withMainApplication,
+  AndroidConfig,
+} = require('@expo/config-plugins');
+const { resolve } = require('path');
 const fs = require('fs');
-const path = require('path');
 
-const withTwilioVoiceAndroid = (config) => {
-  // Add required permissions to AndroidManifest.xml
-  config = withAndroidManifest(config, async (config) => {
-    const mainApplication = config.modResults.manifest.application[0];
-    
+const {
+  addPermission,
+  getMainApplicationOrThrow,
+} = AndroidConfig.Manifest;
+
+/**
+ * Adds the required permissions to the Android Manifest
+ * @param {Object} config - The Expo configuration object
+ * @returns {Object} The modified configuration object
+ */
+const withAndroidPermissions = (config) => {
+  return withAndroidManifest(config, (config) => {
+    const androidManifest = config.modResults;
+    const mainApplication = getMainApplicationOrThrow(androidManifest);
+
     // Add required permissions
     const permissions = [
       'android.permission.INTERNET',
       'android.permission.RECORD_AUDIO',
-      'android.permission.MODIFY_AUDIO_SETTINGS',
       'android.permission.ACCESS_NETWORK_STATE',
-      'android.permission.WAKE_LOCK',
-      'android.permission.FOREGROUND_SERVICE'
+      'android.permission.ACCESS_WIFI_STATE',
     ];
 
-    permissions.forEach(permission => {
-      if (!config.modResults.manifest['uses-permission']) {
-        config.modResults.manifest['uses-permission'] = [];
-      }
-      
-      // Check if permission already exists
-      const exists = config.modResults.manifest['uses-permission'].some(
-        p => p.$['android:name'] === permission
-      );
-      
-      if (!exists) {
-        config.modResults.manifest['uses-permission'].push({
-          $: {
-            'android:name': permission
-          }
-        });
-      }
+    permissions.forEach((permission) => {
+      addPermission(androidManifest, permission);
     });
 
-    // Add required services
-    if (!mainApplication.service) {
-      mainApplication.service = [];
+    return config;
+  });
+};
+
+/**
+ * Adds Firebase dependencies to the Android project
+ * @param {Object} config - The Expo configuration object
+ * @returns {Object} The modified configuration object
+ */
+const withFirebaseDependency = (config) => {
+  return withProjectBuildGradle(config, (config) => {
+    if (config.modResults.contents.includes('google-services')) {
+      return config;
     }
 
-    // Check if service already exists
-    const serviceExists = mainApplication.service.some(
-      s => s.$['android:name'] === 'com.twiliovoicereactnative.VoiceFirebaseMessagingService'
+    const buildScript = config.modResults.contents;
+    const googleServicesVersion = '4.4.0'; // Use a recent stable version
+
+    // Add Google Services plugin to buildscript dependencies
+    const modifiedBuildScript = buildScript.replace(
+      /dependencies\s*{/,
+      `dependencies {
+        classpath 'com.google.gms:google-services:${googleServicesVersion}'`
     );
-    
-    if (!serviceExists) {
-      mainApplication.service.push({
-        $: {
-          'android:name': 'com.twiliovoicereactnative.VoiceFirebaseMessagingService',
-          'android:exported': 'false'
-        }
-      });
+
+    config.modResults.contents = modifiedBuildScript;
+
+    return config;
+  });
+};
+
+/**
+ * Adds Google Services plugin to the app-level build.gradle
+ * @param {Object} config - The Expo configuration object
+ * @returns {Object} The modified configuration object
+ */
+const withGoogleServicesPlugin = (config) => {
+  return withAppBuildGradle(config, (config) => {
+    if (config.modResults.contents.includes("apply plugin: 'com.google.gms.google-services'")) {
+      return config;
+    }
+
+    const appBuildGradle = config.modResults.contents;
+    const modifiedAppBuildGradle = appBuildGradle.replace(
+      /apply plugin: "com.android.application"/,
+      `apply plugin: "com.android.application"
+apply plugin: 'com.google.gms.google-services'`
+    );
+
+    config.modResults.contents = modifiedAppBuildGradle;
+
+    return config;
+  });
+};
+
+/**
+ * Copies the google-services.json file to the android/app directory if it exists
+ * @param {Object} config - The Expo configuration object
+ * @returns {Object} The modified configuration object
+ */
+const withGoogleServicesJson = (config) => {
+  const projectRoot = config._internal?.projectRoot || process.cwd();
+  const sourceGoogleServicesPath = resolve(projectRoot, 'google-services.json');
+  const targetGoogleServicesPath = resolve(projectRoot, 'android/app/google-services.json');
+
+  if (fs.existsSync(sourceGoogleServicesPath) && !fs.existsSync(targetGoogleServicesPath)) {
+    // Create the android/app directory if it doesn't exist
+    const androidAppDir = resolve(projectRoot, 'android/app');
+    if (!fs.existsSync(androidAppDir)) {
+      fs.mkdirSync(androidAppDir, { recursive: true });
+    }
+
+    // Copy the google-services.json file
+    fs.copyFileSync(sourceGoogleServicesPath, targetGoogleServicesPath);
+  }
+
+  return config;
+};
+
+/**
+ * Disables/enables the built-in Firebase Cloud Messaging listener
+ * @param {Object} config - The Expo configuration object
+ * @param {boolean} enabled - Whether to enable the FCM listener
+ * @returns {Object} The modified configuration object
+ */
+const withFcmListenerConfig = (config, enabled = true) => {
+  return withMainApplication(config, (config) => {
+    const mainApplication = config.modResults;
+
+    // Set the FCM enabled flag in the class initialization
+    const fcmConfigLine = `        // Set Twilio Voice FCM listener configuration
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("twiliovoicereactnative_firebasemessagingservice_enabled", ${enabled});
+        getApplicationContext().getResources().updateConfiguration(
+            getApplicationContext().getResources().getConfiguration(),
+            bundle
+        );`;
+
+    if (!mainApplication.includes('twiliovoicereactnative_firebasemessagingservice_enabled')) {
+      const modifiedMainApplication = mainApplication.replace(
+        /public void onCreate\(\) {/,
+        `public void onCreate() {
+${fcmConfigLine}`
+      );
+
+      config.modResults = modifiedMainApplication;
     }
 
     return config;
   });
+};
 
-  // Add Google Services Plugin to build.gradle
-  config = withDangerousMod(config, [
-    'android',
-    async (config) => {
-      const buildGradlePath = path.join(config.modRequest.platformProjectRoot, 'build.gradle');
-      
-      if (fs.existsSync(buildGradlePath)) {
-        let buildGradleContent = fs.readFileSync(buildGradlePath, 'utf8');
-        
-        // Check if Google Services Plugin is already applied
-        if (!buildGradleContent.includes('apply plugin: \'com.google.gms.google-services\'')) {
-          // Add the classpath dependency if not present
-          if (!buildGradleContent.includes('com.google.gms:google-services:')) {
-            const buildScriptIndex = buildGradleContent.indexOf('buildscript {');
-            if (buildScriptIndex !== -1) {
-              const dependenciesBlock = buildGradleContent.indexOf('dependencies {', buildScriptIndex);
-              if (dependenciesBlock !== -1) {
-                const closeBracketIndex = buildGradleContent.indexOf('}', dependenciesBlock);
-                if (closeBracketIndex !== -1) {
-                  const insertion = '        classpath "com.google.gms:google-services:4.3.15"\n';
-                  buildGradleContent = 
-                    buildGradleContent.slice(0, closeBracketIndex) + 
-                    insertion + 
-                    buildGradleContent.slice(closeBracketIndex);
-                }
-              }
-            }
-          }
-          
-          // Add Google Services Plugin
-          buildGradleContent = buildGradleContent.replace(
-            /apply plugin: ['"]com\.android\.application['"]/,
-            'apply plugin: \'com.android.application\'\napply plugin: \'com.google.gms.google-services\''
-          );
-          
-          fs.writeFileSync(buildGradlePath, buildGradleContent);
-        }
-      }
-      
-      return config;
-    }
-  ]);
-
-  // Copy google-services.json if it exists
-  config = withDangerousMod(config, [
-    'android',
-    async (config) => {
-      const googleServicesPath = path.join(config.modRequest.projectRoot, 'google-services.json');
-      const targetPath = path.join(config.modRequest.platformProjectRoot, 'app', 'google-services.json');
-      
-      if (fs.existsSync(googleServicesPath)) {
-        // Create app directory if it doesn't exist
-        const appDir = path.dirname(targetPath);
-        if (!fs.existsSync(appDir)) {
-          fs.mkdirSync(appDir, { recursive: true });
-        }
-        
-        // Copy google-services.json
-        fs.copyFileSync(googleServicesPath, targetPath);
-      }
-      
-      return config;
-    }
-  ]);
+/**
+ * Main config plugin for Twilio Voice on Android
+ * @param {Object} config - The Expo configuration object
+ * @returns {Object} The modified configuration object
+ */
+const withTwilioVoiceAndroid = (config) => {
+  config = withAndroidPermissions(config);
+  config = withFirebaseDependency(config);
+  config = withGoogleServicesPlugin(config);
+  config = withGoogleServicesJson(config);
+  
+  // By default, enable the FCM listener
+  // Users can disable it in their app.config.js if needed
+  const fcmListenerEnabled = config.expo?.twilio?.fcmListenerEnabled ?? true;
+  config = withFcmListenerConfig(config, fcmListenerEnabled);
 
   return config;
 };
