@@ -1,10 +1,10 @@
 # PING_PONG.md
 
-## Update 8: Gradle Build Error Fixed (Attempt 2)
+## Update 10: Gradle Build Error Fixed (Attempt 3)
 
 **Issue:**
 
-The previous fix using `afterEvaluate` in the fork's `android/build.gradle` was ineffective. The Android build still failed with the Gradle error about missing task dependency:
+The Android build continues to fail with the Gradle error regarding missing task dependencies between resource generation and packaging, despite previous attempts.
 
 ```
 Reason: Task ':twilio_voice-react-native-sdk:packageDebugResources' uses this output of task ':twilio_voice-react-native-sdk:generateDebugResValues' without declaring an explicit or implicit dependency.
@@ -12,54 +12,75 @@ Reason: Task ':twilio_voice-react-native-sdk:packageDebugResources' uses this ou
 
 **Analysis:**
 
-The `afterEvaluate` block might not reliably configure dynamically generated tasks for all build variants. A more robust approach is needed.
+The previous attempts using `afterEvaluate` and `android.libraryVariants.all` with `tasks.named` were insufficient. Gradle task configuration and the Android Gradle Plugin's variant API can be complex.
 
-**Solution Implemented (Attempt 2):**
+**Solution Implemented (Attempt 3):**
 
-I have replaced the `afterEvaluate` block in the fork's `android/build.gradle` with a different approach:
+I have implemented a potentially more robust fix in the fork's `android/build.gradle`:
 
-- It now iterates through `android.libraryVariants.all`.
-- For each variant, it uses `tasks.named()` to get references to the `generate<VariantName>ResValues` and `package<VariantName>Resources` tasks.
-- It explicitly sets `packageTask.dependsOn(generateTask)` within the configuration block for the packaging task.
+1.  Removed the previous `android.libraryVariants.all { ... }` block.
+2.  Added a new `android.libraryVariants.all { ... }` block that uses `tasks.matching { ... }.configureEach { ... }`.
+3.  This new block specifically targets the `process<VariantName>JavaRes` task (which is often the consumer of generated resources) and makes it `dependsOn` the corresponding `generate<VariantName>ResValues` task.
+4.  Added logging (`project.logger.quiet(...)`) to the Gradle script to help verify if this configuration step is being executed during the build (look for "AGP Task Dependency Fix: ..." messages in the build output).
 
-This method hooks into Gradle's task configuration more directly and should reliably establish the dependency for all variants (debug, release, etc.).
+This approach attempts to configure the tasks slightly later and more specifically, which might resolve the dependency issue.
 
 **Next Steps for Developer:**
 
 1.  **Pull Changes**: Get the *latest* version of the code from the fork repository (`guyrosen/twilio-voice-react-native`), which includes the updated `android/build.gradle`.
-2.  **Clean and Rebuild**: Perform a clean build again:
+2.  **Clean Build**: Perform a clean build to ensure no stale artifacts interfere:
     ```bash
     cd android
     ./gradlew clean
     cd ..
-    npx expo prebuild --platform android --clean
+    npx expo prebuild --platform android --clean 
     npx expo run:android
     ```
-3.  **Test**: Verify that the Gradle build error is finally resolved and the Android app builds successfully.
+3.  **Monitor Build Logs**: Carefully watch the Gradle build output for:
+    *   The logging message: `AGP Task Dependency Fix: Task 'processDebugJavaRes' now dependsOn 'generateDebugResValues'` (or similar for other variants).
+    *   The absence of the original Gradle task dependency error.
+4.  **Test**: If the build succeeds, verify the original `NullPointerException` fix related to `JSEventEmitter` is still working correctly.
+
+--- 
+
+## Update 9: Gradle Build Error STILL Persists
+
+**Issue:** Android build failed due to missing Gradle task dependency.
+**Analysis:** Second attempt using `android.libraryVariants.all` and `tasks.named()` was ineffective.
+**Request:** Revisit Gradle configuration.
+
+---
+
+## Update 8: Gradle Build Error Fixed (Attempt 2 - Failed)
+
+**Issue:** Android build failed due to missing Gradle task dependency.
+**Analysis:** Previous `afterEvaluate` fix was ineffective.
+**Solution Implemented (Attempt 2):** Replaced `afterEvaluate` with `android.libraryVariants.all` iteration and `tasks.named().configure { dependsOn(...) }` in fork's `android/build.gradle`.
+**Result:** The fix was *ineffective*.
 
 ---
 
 ## Update 7: Gradle Build Error Persists (Attempt 1 Failed)
 
-**Issue:** Android build failed due to missing Gradle task dependency, despite the `afterEvaluate` fix attempt.
-**Analysis:** The `afterEvaluate` approach was insufficient.
-**Request:** Revisit Gradle configuration for a more robust dependency declaration.
+**Issue:** Android build failed despite `afterEvaluate` fix attempt.
+**Analysis:** `afterEvaluate` approach was insufficient.
+**Request:** Revisit Gradle configuration.
 
 ---
 
-## Update 6: Gradle Build Error Fixed (Attempt 1)
+## Update 6: Gradle Build Error Fixed (Attempt 1 - Failed)
 
-**Issue:** Android build failed due to missing Gradle task dependency (`package...Resources` vs `generate...ResValues`) in the fork.
-**Analysis:** Internal build configuration issue in the fork's `android/build.gradle`.
-**Solution Implemented:** Added `afterEvaluate` block in fork's `android/build.gradle` to set `dependsOn`.
-**Result:** The fix was ineffective; the build still fails with the same error.
+**Issue:** Android build failed due to missing Gradle task dependency.
+**Analysis:** Internal build configuration issue in fork's `android/build.gradle`.
+**Solution Implemented:** Added `afterEvaluate` block to set `dependsOn`.
+**Result:** The fix was ineffective.
 
 ---
 
 ## Update 5: Gradle Build Error in Fork (Identified)
 
-**Issue:** Build failed with Gradle error about missing dependency between `packageDebugResources` and `generateDebugResValues` in the fork.
-**Analysis:** Confirmed internal build configuration issue in the fork's `android/build.gradle`.
+**Issue:** Build failed with Gradle error about missing dependency.
+**Analysis:** Confirmed internal build configuration issue in fork.
 **Request:** Fix the Gradle task dependency.
 
 ---
@@ -67,7 +88,7 @@ This method hooks into Gradle's task configuration more directly and should reli
 ## Update 4: Config Plugins Missing from Package (Fixed by Fork Update & Local Copy)
 
 **Issue:** `expo prebuild` failed to resolve config plugins.
-**Solution Implemented:** Added plugins to `files` array in fork's `package.json`, copied plugins locally, fixed exports.
+**Solution Implemented:** Added plugins to `files` array in fork, copied plugins locally, fixed exports.
 **Result:** `prebuild` passed.
 
 ---
@@ -91,6 +112,7 @@ This method hooks into Gradle's task configuration more directly and should reli
 ## Original: Twilio Voice SDK Integration Issue (Context - Fixed)
 
 **Issue Description:** `NullPointerException` on `JSEventEmitter` during initialization.
+**Root Cause Analysis (Fixed):** `JSEventEmitter` created but `ReactApplicationContext` not set before use.
 **Solution Implemented (Fixed):** Modified `ExpoModule.kt` in fork to set context during `OnCreate`.
 
 ### References

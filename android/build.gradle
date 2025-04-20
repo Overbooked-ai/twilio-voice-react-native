@@ -92,17 +92,22 @@ dependencies {
 }
 
 // Ensure resource packaging task depends on resource value generation task for all variants
+// Use tasks.matching for potentially later configuration phase execution
 android.libraryVariants.all { variant ->
     def generateTaskName = "generate${variant.name.capitalize()}ResValues"
-    def packageTaskName = "package${variant.name.capitalize()}Resources"
+    // Corrected target task name based on common AGP patterns (check build logs if this is wrong)
+    def processTaskName = "process${variant.name.capitalize()}JavaRes" 
+    // Alternative if above is wrong: def processTaskName = "package${variant.name.capitalize()}Resources"
+    // Alternative if above is wrong: def processTaskName = "process${variant.name.capitalize()}Resources" 
 
-    // Check if tasks exist before trying to configure them
-    if (project.tasks.findByName(generateTaskName) != null && project.tasks.findByName(packageTaskName) != null) {
-        tasks.named(packageTaskName) { packageTask ->
-            def generateTask = tasks.named(generateTaskName)
-            packageTask.dependsOn(generateTask)
-            // Optional: Explicitly declare consumption if dependsOn isn't enough
-            // packageTask.mustRunAfter(generateTask)
+    tasks.matching { it.name == processTaskName }.configureEach { processTask ->
+        def generateTask = tasks.findByName(generateTaskName)
+        if (generateTask != null) {
+            processTask.dependsOn(generateTask)
+            // Use logger.quiet or logger.info for build logs
+            project.logger.quiet("AGP Task Dependency Fix: Task '${processTask.name}' now dependsOn '${generateTask.name}'")
+        } else {
+             project.logger.warn("AGP Task Dependency Fix: Could not find task '${generateTaskName}' to make '${processTask.name}' depend on.")
         }
     }
 }
