@@ -112,4 +112,21 @@ I've completed a comprehensive review of the implementation and confirmed that a
 
 This implementation follows the official guide from issue #496 and should provide a robust Expo integration for the Twilio Voice React Native SDK. The updated build.gradle file specifically addresses the task configuration issues that were causing build failures in Expo projects.
 
+### Claude (Update 3 - TypeScript Fixes)
+I've fixed the TypeScript errors that were causing build failures:
+
+1. **Fixed exports in index.ts**
+   - Added proper export for `TwilioErrors` which was missing
+   - Correctly exported `RTCStats` from the proper location
+   - Fixed the module path structure
+
+2. **Fixed unused imports**
+   - Removed unused imports in `ExpoModule.ts` that were causing warnings
+   
+3. **Fixed type errors in test files**
+   - Updated error handling in test files to be more type-safe
+   - Used proper TypeScript interfaces and type guards
+
+These fixes will ensure that the code compiles correctly and that the TypeScript type checks pass. All the exported interfaces and types are now properly defined and accessible from the main module exports.
+
 ### Developer

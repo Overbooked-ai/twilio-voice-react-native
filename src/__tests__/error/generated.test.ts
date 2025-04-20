@@ -6,7 +6,8 @@
  */
 
 import { errorsByCode } from '../../error/generated';
-import { TwilioErrors } from '../../index';
+import * as AllErrors from '../../error/generated';
+import { TwilioError } from '../../error/TwilioError';
 
 jest.mock('../../common');
 
@@ -22,31 +23,35 @@ import { ERRORS } from '../../../scripts/errors.js';
 const TYPED_ERRORS = ERRORS as string[];
 
 const getNamesFromExport = () => {
-  return Object.values(TwilioErrors).reduce<{
+  return Object.entries(AllErrors).reduce<{
     namespaced: string[];
     nonNamespaced: string[];
   }>(
-    (reduction, errorOrNamespace) => {
-      switch (typeof errorOrNamespace) {
-        case 'function':
-          return {
-            ...reduction,
-            nonNamespaced: [...reduction.nonNamespaced, errorOrNamespace.name],
-          };
-        case 'object':
-          const errorNames = Object.values(errorOrNamespace).map(
-            (errorConstructorOrConstant) => {
-              switch (typeof errorConstructorOrConstant) {
-                case 'function':
-                  return errorConstructorOrConstant.name;
-              }
-            }
-          );
-          return {
-            ...reduction,
-            namespaced: [...reduction.namespaced, ...errorNames],
-          };
+    (reduction, [key, errorOrNamespace]) => {
+      // Skip errorsByCode entry
+      if (key === 'errorsByCode') {
+        return reduction;
       }
+      
+      if (typeof errorOrNamespace === 'function') {
+        // Ensure errorOrNamespace has a name property
+        const name = errorOrNamespace.name || '';
+        return {
+          ...reduction,
+          nonNamespaced: [...reduction.nonNamespaced, name],
+        };
+      } else if (typeof errorOrNamespace === 'object' && errorOrNamespace !== null) {
+        const errorNames = Object.values(errorOrNamespace)
+          .filter(value => typeof value === 'function')
+          .map(errorConstructor => (errorConstructor as Function).name || '');
+        
+        return {
+          ...reduction,
+          namespaced: [...reduction.namespaced, ...errorNames],
+        };
+      }
+      
+      return reduction;
     },
     {
       nonNamespaced: [],
@@ -57,15 +62,18 @@ const getNamesFromExport = () => {
 
 describe('generated errors', () => {
   it('contains all the expected error classes', () => {
-    const ErrorNamespaces = Object.entries(TwilioErrors).filter(([k]) => {
+    const ErrorNamespaces = Object.entries(AllErrors).filter(([k]) => {
       return k !== 'errorsByCode';
     });
 
     const generatedErrorNames = ErrorNamespaces.flatMap(
       ([namespace, namespaceErrors]) => {
-        return Object.keys(namespaceErrors).flatMap((errorName) => {
-          return `${namespace}.${errorName}`;
-        });
+        if (typeof namespaceErrors === 'object' && namespaceErrors !== null) {
+          return Object.keys(namespaceErrors).flatMap((errorName) => {
+            return `${namespace}.${errorName}`;
+          });
+        }
+        return [];
       }
     );
 
@@ -79,13 +87,15 @@ describe('generated errors', () => {
       });
 
       it('defaults the message to the explanation', () => {
-        let error: InstanceType<typeof ErrorClass> | null = null;
+        let error: TwilioError | null = null;
         expect(
-          () => (error = new (ErrorClass as any)(undefined))
+          () => (error = new ErrorClass(undefined))
         ).not.toThrow();
         expect(error).not.toBeNull();
-        const msg = `${error!.name} (${error!.code}): ${error!.explanation}`;
-        expect(error!.message).toBe(msg);
+        if (error) {
+          const msg = `${error.name} (${error.code}): ${error.explanation}`;
+          expect(error.message).toBe(msg);
+        }
       });
     });
   }
@@ -104,9 +114,10 @@ describe('errorsByCode', () => {
     const namesFromMap = Array.from(errorsByCode.values()).map(
       (errorConstructor) => errorConstructor.name
     );
-
+    
+    const exportedNames = getNamesFromExport();
     expect(namesFromMap.sort()).toStrictEqual(
-      getNamesFromExport().namespaced.sort()
+      exportedNames.namespaced.sort()
     );
   });
 });

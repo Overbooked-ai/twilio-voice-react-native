@@ -1,7 +1,5 @@
 import { Platform } from 'react-native';
 import { requireNativeModule } from 'expo-modules-core';
-import type { CallInvite } from './CallInvite';
-import type { Call } from './Call';
 import { NativeModule as RNNativeModule } from './common';
 
 /**
