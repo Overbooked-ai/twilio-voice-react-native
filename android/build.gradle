@@ -72,6 +72,15 @@ android {
 repositories {
   google()
   mavenCentral()
+  // Add jcenter() for older Expo modules support
+  jcenter()
+  // Add Expo repository
+  maven {
+    url "$rootDir/../node_modules/expo/node_modules/expo-modules-core/android/maven"
+  }
+  maven {
+    url "$rootDir/../node_modules/expo-modules-core/android/maven"
+  }
 }
 
 dependencies {
@@ -91,8 +100,8 @@ dependencies {
   // Audio management
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   
-  // Expo modules support
-  implementation "expo.modules.core:core:1.0.0"
+  // Expo modules support - updated to use the correct coordinates
+  implementation 'expo.modules.core:core:+'
   
   // Material design components
   implementation 'com.google.android.material:material:1.6.0'
