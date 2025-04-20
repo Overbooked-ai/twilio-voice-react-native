@@ -1,10 +1,10 @@
 # PING_PONG.md
 
-## Update 6: Gradle Build Error Fixed
+## Update 8: Gradle Build Error Fixed (Attempt 2)
 
 **Issue:**
 
-The Android app build (`pnpm android:staging --device`) failed with a Gradle error indicating a missing task dependency within the `@twilio/voice-react-native-sdk` package:
+The previous fix using `afterEvaluate` in the fork's `android/build.gradle` was ineffective. The Android build still failed with the Gradle error about missing task dependency:
 
 ```
 Reason: Task ':twilio_voice-react-native-sdk:packageDebugResources' uses this output of task ':twilio_voice-react-native-sdk:generateDebugResValues' without declaring an explicit or implicit dependency.
@@ -12,40 +12,47 @@ Reason: Task ':twilio_voice-react-native-sdk:packageDebugResources' uses this ou
 
 **Analysis:**
 
-This confirmed an internal build configuration issue within the fork's `android/build.gradle`. The task packaging resources (`packageDebugResources`) could potentially run before the task generating resource values (`generateDebugResValues`), leading to build inconsistencies.
+The `afterEvaluate` block might not reliably configure dynamically generated tasks for all build variants. A more robust approach is needed.
 
-**Solution Implemented:**
+**Solution Implemented (Attempt 2):**
 
-I modified the `android/build.gradle` file within the fork (`guyrosen/twilio-voice-react-native`). An `afterEvaluate` block was added to iterate through all build variants (debug, release, etc.) and explicitly set the dependency:
+I have replaced the `afterEvaluate` block in the fork's `android/build.gradle` with a different approach:
 
-```gradle
-// Add dependency between resource generation and packaging tasks
-afterEvaluate {
-  android.libraryVariants.all { variant ->
-    def generateResValuesTask = tasks.findByName("generate${variant.name.capitalize()}ResValues")
-    def packageResourcesTask = tasks.findByName("package${variant.name.capitalize()}Resources")
+- It now iterates through `android.libraryVariants.all`.
+- For each variant, it uses `tasks.named()` to get references to the `generate<VariantName>ResValues` and `package<VariantName>Resources` tasks.
+- It explicitly sets `packageTask.dependsOn(generateTask)` within the configuration block for the packaging task.
 
-    if (generateResValuesTask != null && packageResourcesTask != null) {
-      packageResourcesTask.dependsOn generateResValuesTask
-    }
-  }
-}
-```
-This ensures `package...Resources` always runs after `generate...ResValues`.
+This method hooks into Gradle's task configuration more directly and should reliably establish the dependency for all variants (debug, release, etc.).
 
 **Next Steps for Developer:**
 
 1.  **Pull Changes**: Get the *latest* version of the code from the fork repository (`guyrosen/twilio-voice-react-native`), which includes the updated `android/build.gradle`.
-2.  **Rebuild**: Clean and rebuild the Android application:
+2.  **Clean and Rebuild**: Perform a clean build again:
     ```bash
-    # Make sure you have the latest fork code referenced in your package.json
-    # Clean previous build artifacts
-    cd android && ./gradlew clean && cd ..
-    # Run the build again
-    npx expo run:android # Or your specific build command like 'pnpm android:staging --device'
+    cd android
+    ./gradlew clean
+    cd ..
+    npx expo prebuild --platform android --clean
+    npx expo run:android
     ```
-    *(Note: `npx expo prebuild --clean` might not be necessary unless you need to regenerate native directories, but cleaning via gradle is recommended)*
-3.  **Test**: Verify that the Android build now completes successfully and the app runs without the previous Gradle error.
+3.  **Test**: Verify that the Gradle build error is finally resolved and the Android app builds successfully.
+
+---
+
+## Update 7: Gradle Build Error Persists (Attempt 1 Failed)
+
+**Issue:** Android build failed due to missing Gradle task dependency, despite the `afterEvaluate` fix attempt.
+**Analysis:** The `afterEvaluate` approach was insufficient.
+**Request:** Revisit Gradle configuration for a more robust dependency declaration.
+
+---
+
+## Update 6: Gradle Build Error Fixed (Attempt 1)
+
+**Issue:** Android build failed due to missing Gradle task dependency (`package...Resources` vs `generate...ResValues`) in the fork.
+**Analysis:** Internal build configuration issue in the fork's `android/build.gradle`.
+**Solution Implemented:** Added `afterEvaluate` block in fork's `android/build.gradle` to set `dependsOn`.
+**Result:** The fix was ineffective; the build still fails with the same error.
 
 ---
 

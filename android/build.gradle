@@ -91,14 +91,18 @@ dependencies {
   }
 }
 
-// Add dependency between resource generation and packaging tasks
-afterEvaluate {
-  android.libraryVariants.all { variant ->
-    def generateResValuesTask = tasks.findByName("generate${variant.name.capitalize()}ResValues")
-    def packageResourcesTask = tasks.findByName("package${variant.name.capitalize()}Resources")
+// Ensure resource packaging task depends on resource value generation task for all variants
+android.libraryVariants.all { variant ->
+    def generateTaskName = "generate${variant.name.capitalize()}ResValues"
+    def packageTaskName = "package${variant.name.capitalize()}Resources"
 
-    if (generateResValuesTask != null && packageResourcesTask != null) {
-      packageResourcesTask.dependsOn generateResValuesTask
+    // Check if tasks exist before trying to configure them
+    if (project.tasks.findByName(generateTaskName) != null && project.tasks.findByName(packageTaskName) != null) {
+        tasks.named(packageTaskName) { packageTask ->
+            def generateTask = tasks.named(generateTaskName)
+            packageTask.dependsOn(generateTask)
+            // Optional: Explicitly declare consumption if dependsOn isn't enough
+            // packageTask.mustRunAfter(generateTask)
+        }
     }
-  }
 }
