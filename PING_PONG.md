@@ -1,58 +1,67 @@
 # PING_PONG.md
 
-## Twilio Voice SDK Integration Issue
+## Update 3: Build Failure Persists (Correcting Dependency)
 
-### Issue Description
-We're encountering a NullPointerException in the Twilio Voice React Native SDK when running on Android:
+**Issue:**
+
+Despite updating TypeScript to `~4.9.5`, the build failure during package installation (`pnpm install ...`) persists. The `bob build` step still fails with TypeScript errors related to `expo-modules-core/build/registerWebModule.d.ts`.
+
+**Error Log Snippet:**
 
 ```
-Attempt to read from field 'com.twiliovoicereactnative.JSEventEmitter com.twiliovoicereactnative.VoiceApplicationProxy.jsEventEmitter' on a null object reference in method 'com.twiliovoicereactnative.JSEventEmitter com.twiliovoicereactnative.VoiceApplicationProxy.getJSEventEmitter()'
+node_modules/expo-modules-core/build/registerWebModule.d.ts:7:121 - error TS1005: ',' expected.
+...
+Found 6 errors in the same file...
+✖ Failed to build definition files.
 ```
 
-This error occurs during the initialization of the Twilio Voice module, specifically when native code tries to access the `JSEventEmitter` instance via `VoiceApplicationProxy.getJSEventEmitter()`.
+**Analysis (Updated):**
 
-### Root Cause Analysis (Updated)
+The persistence of the error suggests the previous hypothesis was incomplete. While the TypeScript version *might* have been a factor, the root cause appears to be an **incorrect version specified for the `expo-modules-core` dependency** itself.
 
-The core issue lies in the initialization timing and context handling within the Expo integration:
+- The fork's `package.json` listed `expo-modules-core: ^2.2.3`.
+- Public releases of `expo-modules-core` are in the `1.x` range (e.g., `1.11.x`). The `2.2.3` version likely does not exist or is not standard, potentially causing installation or build tools to fetch incorrect/incompatible type definitions.
 
-1.  **`ExpoApplicationLifecycleListener`**: This listener correctly creates the `VoiceApplicationProxy` singleton instance and calls its `onCreate` method when the application starts.
-2.  **`VoiceApplicationProxy.onCreate()`**: This method correctly instantiates the `JSEventEmitter` object.
-3.  **Missing Context**: However, the `JSEventEmitter` requires the `ReactApplicationContext` to actually *send* events back to JavaScript. This context is *not* set during the initial creation in `VoiceApplicationProxy.onCreate()` because the application lifecycle listener runs very early, before the React Native instance (and thus the context) is fully ready.
-4.  **`ExpoModule.kt`**: When methods in `ExpoModule.kt` (like `voice_connect`) are called, they trigger actions within the Twilio SDK (e.g., through `CallListenerProxy`) that attempt to use the `JSEventEmitter` via `VoiceApplicationProxy.getJSEventEmitter()`. Although the emitter object exists, it lacks the necessary `ReactApplicationContext` set via its `setContext()` method, leading to internal errors or potentially the observed NPE when `getJSEventEmitter()` is called if internal checks fail implicitly.
+**Solution Implemented:**
 
-Essentially, the `JSEventEmitter` was created but not fully configured with the React context before it was needed.
+I have corrected the `expo-modules-core` version in the fork's `package.json` (dependencies section) to a known stable version: `^1.11.0`. The `typescript` dependency remains at `~4.9.5`.
 
-### Solution Implemented
+**Next Steps for Developer:**
 
-To resolve this, I modified `android/src/main/java/com/twiliovoicereactnative/ExpoModule.kt`:
-
-1.  Added an `OnCreate` block to the `ModuleDefinition`.
-2.  Inside `OnCreate`, which runs when the Expo module is initialized and the `ReactApplicationContext` is available:
-    *   Retrieved the singleton `JSEventEmitter` instance using `VoiceApplicationProxy.getJSEventEmitter()`.
-    *   Called `emitter.setContext(appContext.reactContext)` to provide the necessary context to the emitter.
-
-This ensures the `JSEventEmitter` is fully configured *before* any SDK functions that rely on it are invoked.
-
-### Next Steps for Developer
-
-1.  **Pull Changes**: Get the latest version of the code, including the modified `ExpoModule.kt`.
-2.  **Rebuild**: Clean and rebuild the Android application:
+1.  **Pull Changes**: Get the *latest* version of the code from the fork repository (`guyrosen/twilio-voice-react-native`), which now includes the corrected `expo-modules-core` version in `package.json`.
+2.  **Re-attempt Installation**: Clean slate install again. Remove `node_modules` and any lock files (`pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`) in your project, and then try installing the fork:
     ```bash
-    cd android
-    ./gradlew clean
-    cd ..
-    npx expo prebuild --platform android --clean # or yarn expo prebuild...
-    npx expo run:android # or yarn expo run:android
+    # Example using pnpm
+    rm -rf node_modules pnpm-lock.yaml
+    pnpm install git+https://github.com/guyrosen/twilio-voice-react-native.git#main
+    # or using yarn
+    # rm -rf node_modules yarn.lock
+    # yarn add git+https://github.com/guyrosen/twilio-voice-react-native.git#main
     ```
-3.  **Test**: Verify that the `NullPointerException` related to `JSEventEmitter` no longer occurs during initialization or when making/receiving calls.
-4.  **Monitor**: Keep an eye out for any other potential initialization-related issues, although this fix addresses the specific NPE reported.
+    The `prepare` script (running `bob build`) should now hopefully succeed using the correct dependency types and the compatible TypeScript version.
+3.  **Rebuild**: If the installation succeeds, proceed with rebuilding the native code:
+    ```bash
+    npx expo prebuild --platform android --clean
+    npx expo run:android
+    ```
+4.  **Test**: Verify installation, build, and the original `NullPointerException` fix.
 
-### Potential Solutions (Original - Kept for reference)
+---
 
-1.  ~~**Update the Twilio Voice SDK**: Check if there's a newer version of the SDK that has better Expo support.~~ (Fix applied to fork)
-2.  ~~**Fix the Application Lifecycle**: Ensure that the `VoiceApplicationProxy` is properly initialized before the React Native module tries to use it. This might involve modifying the `ExpoApplicationLifecycleListener.java` file.~~ (Initialization was okay, context setting was the issue, fixed in `ExpoModule.kt`)
-3.  **Check the Expo Config Plugin**: Verify that the Twilio Android config plugin (`withTwilioAndroid.js`) is correctly setting up all required components. (Still relevant if other issues arise)
-4.  ~~**Review the ExpoModule Implementation**: The `ExpoModule.ts` implementation might need adjustments to ensure proper initialization order.~~ (Native Android (`.kt`) module was the issue)
+## Update 2: Build Failure During Installation (Attempt 1: TypeScript Version)
+
+**Issue:** Installation failed during `prepare` script (`bob build`) due to TypeScript errors.
+**Analysis:** Assumed incompatibility between old TypeScript (`4.1.3`) and `expo-modules-core` types.
+**Solution Attempted:** Updated `typescript` to `~4.9.5`.
+**Result:** Failure persisted.
+
+---
+
+## Original: Twilio Voice SDK Integration Issue (Context - Fixed)
+
+**Issue Description:** `NullPointerException` on `JSEventEmitter` during initialization.
+**Root Cause Analysis (Fixed):** `JSEventEmitter` created but `ReactApplicationContext` not set before use.
+**Solution Implemented (Fixed):** Modified `ExpoModule.kt` to set context during `OnCreate`.
 
 ### References
 - [EXPO_SUPPORT_SUMMARY.md](./EXPO_SUPPORT_SUMMARY.md)

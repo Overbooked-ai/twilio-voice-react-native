@@ -82,7 +82,7 @@
     "react-native-builder-bob": "^0.18.0",
     "twilio": "^4.21.0",
     "twilio-release-tool": "^1.0.2",
-    "typescript": "^4.1.3"
+    "typescript": "~4.9.5"
   },
   "peerDependencies": {
     "react": "*",
@@ -157,6 +157,6 @@
   "dependencies": {
     "@twilio/voice-errors": "1.8.0",
     "eventemitter3": "^4.0.7",
-    "expo-modules-core": "^2.2.3"
+    "expo-modules-core": "^1.11.0"
   }
 }
