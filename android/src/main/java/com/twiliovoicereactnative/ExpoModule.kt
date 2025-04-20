@@ -7,10 +7,24 @@ import com.twilio.voice.CallListener
 import com.twilio.voice.ConnectOptions
 import com.twilio.voice.Voice
 import java.util.UUID
+import com.facebook.react.bridge.ReactApplicationContext
 
 class ExpoModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("TwilioVoice")
+
+        OnCreate {
+            val reactContext = appContext.reactContext
+            if (reactContext is ReactApplicationContext) {
+                val emitter = VoiceApplicationProxy.getJSEventEmitter()
+                if (emitter != null) {
+                    emitter.setContext(reactContext)
+                } else {
+                    // Log error or handle case where emitter wasn't created yet
+                    // This might indicate a deeper issue if the listener didn't run
+                }
+            }
+        }
 
         Function("voice_connect") { accessToken: String ->
             val context = appContext.reactContext
