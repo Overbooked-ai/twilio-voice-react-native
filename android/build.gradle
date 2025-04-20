@@ -91,26 +91,25 @@ dependencies {
   }
 }
 
-// Attempt to fix task dependency issue for AGP 7.4.x
-afterEvaluate {
-    if (android.hasProperty("libraryVariants")) {
-        android.libraryVariants.all { variant ->
-            def variantName = variant.name.capitalize()
-            def generateTaskName = "generate${variantName}ResValues"
-            def packageTaskName = "package${variantName}Resources"
-            
-            // Check if tasks exist before configuring
-            def generateTask = tasks.findByName(generateTaskName)
-            def packageTask = tasks.findByName(packageTaskName)
-            
-            if (generateTask != null && packageTask != null) {
-                project.logger.quiet("AGP Task Dependency Fix: Configuring dependency for variant '${variant.name}': ${packageTaskName} -> ${generateTaskName}")
-                packageTask.dependsOn(generateTask)
-            } else {
-                project.logger.warn("AGP Task Dependency Fix: Could not find tasks for variant '${variant.name}'. Expected: ${generateTaskName}, ${packageTaskName}")
-            }
+// Add this new block to explicitly declare input/output dependencies
+android.libraryVariants.all { variant ->
+    def generateTaskProvider = tasks.named("generate${variant.name.capitalize()}ResValues")
+    def packageTaskProvider = tasks.named("package${variant.name.capitalize()}Resources")
+
+    packageTaskProvider.configure { packageTask ->
+        // Declare the output directory of generateTask as an input directory for packageTask
+        // Use the task provider to ensure generateTask is configured before we access its output
+        generateTaskProvider.configure { generateTask ->
+             // Check if output files exist before accessing singleFile
+             if (!generateTask.outputs.files.isEmpty()) {
+                 def outputDir = generateTask.outputs.files.singleFile
+                 packageTask.inputs.dir(outputDir).withPathSensitivity(PathSensitivity.RELATIVE)
+                 project.logger.quiet("AGP Task Dependency Fix (Input/Output): Configuring for variant '${variant.name}'")
+             } else {
+                project.logger.warn("AGP Task Dependency Fix (Input/Output): No output files found for ${generateTask.name} for variant '${variant.name}'")
+             }
         }
-    } else {
-         project.logger.warn("AGP Task Dependency Fix: android.libraryVariants not found during afterEvaluate.")
+        // Add dependsOn as a fallback (optional, Input/Output is preferred)
+        // packageTask.dependsOn(generateTaskProvider)
     }
 }
