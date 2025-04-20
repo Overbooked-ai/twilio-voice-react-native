@@ -108,30 +108,3 @@ dependencies {
   }
 }
 
-// Make sure the resources task gets executed before packaging resources
-afterEvaluate {
-  android.buildTypes.each { buildType ->
-    def buildTypeName = buildType.name.capitalize()
-    
-    // Generate task names for packageResources and generateResValues
-    def packageResourcesTaskName = "package${buildTypeName}Resources"
-    def generateResValuesTaskName = "generate${buildTypeName}ResValues"
-    
-    // Add dependency only if both tasks exist
-    if (tasks.findByName(packageResourcesTaskName) != null && 
-        tasks.findByName(generateResValuesTaskName) != null) {
-      tasks.named(packageResourcesTaskName).configure {
-        dependsOn(tasks.named(generateResValuesTaskName))
-      }
-    }
-  }
-}
-
-// Disabling implicit dependency validation to avoid task graph issues
-gradle.projectsEvaluated {
-  tasks.withType(com.android.build.gradle.internal.tasks.AndroidVariantTask) { task ->
-    task.dependsOn = task.dependsOn.findAll { 
-      it != null && it.toString() != 'null' 
-    }
-  }
-}
