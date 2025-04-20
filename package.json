@@ -63,7 +63,7 @@
     "@react-native-community/eslint-config": "^2.0.0",
     "@types/jest": "^28.1.6",
     "@types/react": "18.2.48",
-    "@types/react-native": "0.62.13",
+    "@types/react-native": "^0.62.13",
     "api-documenter": "github:twilio/api-documenter#v0.0.1",
     "axios": "^1.7.2",
     "commitlint": "^11.0.0",
@@ -156,6 +156,7 @@
   },
   "dependencies": {
     "@twilio/voice-errors": "1.8.0",
-    "eventemitter3": "^4.0.7"
+    "eventemitter3": "^4.0.7",
+    "expo-modules-core": "^2.2.3"
   }
 }
