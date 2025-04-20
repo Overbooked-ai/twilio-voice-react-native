@@ -91,23 +91,26 @@ dependencies {
   }
 }
 
-// Ensure resource packaging task depends on resource value generation task for all variants
-// Use tasks.matching for potentially later configuration phase execution
-android.libraryVariants.all { variant ->
-    def generateTaskName = "generate${variant.name.capitalize()}ResValues"
-    // Corrected target task name based on common AGP patterns (check build logs if this is wrong)
-    def processTaskName = "process${variant.name.capitalize()}JavaRes" 
-    // Alternative if above is wrong: def processTaskName = "package${variant.name.capitalize()}Resources"
-    // Alternative if above is wrong: def processTaskName = "process${variant.name.capitalize()}Resources" 
-
-    tasks.matching { it.name == processTaskName }.configureEach { processTask ->
-        def generateTask = tasks.findByName(generateTaskName)
-        if (generateTask != null) {
-            processTask.dependsOn(generateTask)
-            // Use logger.quiet or logger.info for build logs
-            project.logger.quiet("AGP Task Dependency Fix: Task '${processTask.name}' now dependsOn '${generateTask.name}'")
-        } else {
-             project.logger.warn("AGP Task Dependency Fix: Could not find task '${generateTaskName}' to make '${processTask.name}' depend on.")
+// Attempt to fix task dependency issue for AGP 7.4.x
+afterEvaluate {
+    if (android.hasProperty("libraryVariants")) {
+        android.libraryVariants.all { variant ->
+            def variantName = variant.name.capitalize()
+            def generateTaskName = "generate${variantName}ResValues"
+            def packageTaskName = "package${variantName}Resources"
+            
+            // Check if tasks exist before configuring
+            def generateTask = tasks.findByName(generateTaskName)
+            def packageTask = tasks.findByName(packageTaskName)
+            
+            if (generateTask != null && packageTask != null) {
+                project.logger.quiet("AGP Task Dependency Fix: Configuring dependency for variant '${variant.name}': ${packageTaskName} -> ${generateTaskName}")
+                packageTask.dependsOn(generateTask)
+            } else {
+                project.logger.warn("AGP Task Dependency Fix: Could not find tasks for variant '${variant.name}'. Expected: ${generateTaskName}, ${packageTaskName}")
+            }
         }
+    } else {
+         project.logger.warn("AGP Task Dependency Fix: android.libraryVariants not found during afterEvaluate.")
     }
 }
