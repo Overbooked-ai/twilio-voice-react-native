@@ -1,50 +1,70 @@
 # PING_PONG.md
 
-## Update 3: Build Failure Persists (Correcting Dependency)
+## Update 4: Config Plugins Missing from Package
 
 **Issue:**
 
-Despite updating TypeScript to `~4.9.5`, the build failure during package installation (`pnpm install ...`) persists. The `bob build` step still fails with TypeScript errors related to `expo-modules-core/build/registerWebModule.d.ts`.
-
-**Error Log Snippet:**
+After successfully installing the fork (post-dependency fixes), the `npx expo prebuild --clean` command fails because the config plugin files (`expo-config-plugin/ios.js` and `expo-config-plugin/android.js`) cannot be resolved within the installed package in `node_modules`.
 
 ```
-node_modules/expo-modules-core/build/registerWebModule.d.ts:7:121 - error TS1005: ',' expected.
-...
-Found 6 errors in the same file...
-✖ Failed to build definition files.
+PluginError: Failed to resolve plugin for module "node_modules/@twilio/voice-react-native-sdk/expo-config-plugin/ios.js" ...
 ```
 
-**Analysis (Updated):**
+**Analysis:**
 
-The persistence of the error suggests the previous hypothesis was incomplete. While the TypeScript version *might* have been a factor, the root cause appears to be an **incorrect version specified for the `expo-modules-core` dependency** itself.
-
-- The fork's `package.json` listed `expo-modules-core: ^2.2.3`.
-- Public releases of `expo-modules-core` are in the `1.x` range (e.g., `1.11.x`). The `2.2.3` version likely does not exist or is not standard, potentially causing installation or build tools to fetch incorrect/incompatible type definitions.
+The `files` array in the fork's `package.json` did not include the `expo-config-plugin` directory or the related root configuration files (`app.config.js`, `expo-module.config.json`). Therefore, these essential files were not included when the package was installed.
 
 **Solution Implemented:**
 
-I have corrected the `expo-modules-core` version in the fork's `package.json` (dependencies section) to a known stable version: `^1.11.0`. The `typescript` dependency remains at `~4.9.5`.
+I have updated the `files` array in the fork's `package.json` to include:
+- `expo-config-plugin`
+- `app.config.js`
+- `expo-module.config.json`
+
+This ensures these files are correctly packaged and available after installation.
 
 **Next Steps for Developer:**
 
-1.  **Pull Changes**: Get the *latest* version of the code from the fork repository (`guyrosen/twilio-voice-react-native`), which now includes the corrected `expo-modules-core` version in `package.json`.
-2.  **Re-attempt Installation**: Clean slate install again. Remove `node_modules` and any lock files (`pnpm-lock.yaml`, `yarn.lock`, `package-lock.json`) in your project, and then try installing the fork:
+1.  **Pull Changes**: Get the *very latest* version of the code from the fork repository (`guyrosen/twilio-voice-react-native`), which includes the updated `package.json` (`files` array).
+2.  **Re-install**: Clean slate install *again* to ensure the newly included files are present:
     ```bash
     # Example using pnpm
     rm -rf node_modules pnpm-lock.yaml
     pnpm install git+https://github.com/guyrosen/twilio-voice-react-native.git#main
-    # or using yarn
-    # rm -rf node_modules yarn.lock
-    # yarn add git+https://github.com/guyrosen/twilio-voice-react-native.git#main
     ```
-    The `prepare` script (running `bob build`) should now hopefully succeed using the correct dependency types and the compatible TypeScript version.
-3.  **Rebuild**: If the installation succeeds, proceed with rebuilding the native code:
+3.  **Verify Installation**: Check `node_modules/@twilio/voice-react-native-sdk` to confirm the `expo-config-plugin` directory now exists.
+4.  **Configure `app.config.js`**: Make sure your project's `app.config.js` (or `app.json`) correctly references the plugin paths within `node_modules` as shown in `EXPO_SUPPORT_SUMMARY.md`:
+    ```javascript
+    // In your project's app.config.js
+    module.exports = {
+      // ... other config
+      plugins: [
+        // ... other plugins
+        './node_modules/@twilio/voice-react-native-sdk/expo-config-plugin/ios.js',
+        './node_modules/@twilio/voice-react-native-sdk/expo-config-plugin/android.js'
+      ]
+    };
+    ```
+5.  **Rebuild**: Run prebuild again:
     ```bash
     npx expo prebuild --platform android --clean
-    npx expo run:android
+    # or npx expo prebuild --platform ios --clean
     ```
-4.  **Test**: Verify installation, build, and the original `NullPointerException` fix.
+    This step should now succeed as the plugins can be resolved.
+6.  **Run & Test**: Build and run the app, then test the original `NullPointerException` fix:
+    ```bash
+    npx expo run:android
+    # or npx expo run:ios
+    ```
+
+---
+
+## Update 3: Build Failure Persists (Correcting Dependency)
+
+**Issue:** Build failure during installation persisted due to TypeScript errors.
+**Analysis:** Identified incorrect `expo-modules-core` version (`^2.2.3`) in `package.json`.
+**Solution Implemented:** Corrected `expo-modules-core` version to `^1.11.0`.
+**Result:** Installation succeeded, but prebuild failed due to missing plugin files.
 
 ---
 
