@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * =============================================================================
  * NOTE(mhuynh): if tests fail in this file, ensure that errors have been
