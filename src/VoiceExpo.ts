@@ -75,7 +75,6 @@ class VoiceExpoImpl implements VoiceExpoType {
     if (this.rnVoice) {
       // @ts-ignore Type issues with Voice static class
       if (typeof this.rnVoice.on === 'function') {
-        // Handle call invites
         // @ts-ignore Type issues with Voice static class
         this.rnVoice.on(Voice.Event.CallInvite, (callInvite: CallInvite) => {
           if (callInvite && typeof callInvite.getSid === 'function') {
@@ -86,7 +85,6 @@ class VoiceExpoImpl implements VoiceExpoType {
           }
         });
         
-        // Handle new calls
         // @ts-ignore Type issues with Voice static class
         this.rnVoice.on(Voice.Event.Call, (call: Call) => {
           if (call && typeof call.getSid === 'function') {
@@ -97,7 +95,6 @@ class VoiceExpoImpl implements VoiceExpoType {
           }
         });
         
-        // Handle disconnected calls
         // @ts-ignore Type issues with Voice static class
         this.rnVoice.on(Voice.Event.CallDisconnected, (call: Call) => {
           if (call && typeof call.getSid === 'function') {
@@ -108,7 +105,6 @@ class VoiceExpoImpl implements VoiceExpoType {
           }
         });
         
-        // Handle canceled call invites
         // @ts-ignore Type issues with Voice static class
         this.rnVoice.on(Voice.Event.CallInviteCanceled, (callInvite: CallInvite) => {
           if (callInvite && typeof callInvite.getSid === 'function') {

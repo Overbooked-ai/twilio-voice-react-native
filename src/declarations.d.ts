@@ -6,7 +6,7 @@
 import { Event } from './common';
 import { Call } from './Call';
 import { CallInvite } from './CallInvite';
-import { Voice as VoiceOrig } from './Voice';
+import { Voice } from './Voice';
 import { TwilioError } from './error/TwilioError';
 
 // Global TypeScript declarations for Twilio Voice React Native SDK
@@ -210,4 +210,42 @@ declare module './Call' {
     hold(onHold: boolean): void;
     sendDigits(digits: string): void;
   }
-} 
+}
+
+// Augment types for Voice class to add missing static methods
+declare module './Voice' {
+  interface Voice {
+    connect(accessToken: string, params?: Record<string, string>): Promise<Call>;
+    register(accessToken: string): Promise<void>;
+    unregister(accessToken: string): Promise<void>;
+    getDeviceToken(): Promise<string | null>;
+    handleNotification(payload: Record<string, any>): Promise<boolean>;
+    isValidTwilioNotification(payload: Record<string, any>): boolean;
+    setSpeakerPhone(enabled: boolean): Promise<void>;
+    on(event: Event, listener: (...args: any[]) => void): void;
+  }
+}
+
+// Augment CallInvite type
+declare module './CallInvite' {
+  interface CallInvite {
+    getSid(): string;
+    accept(): void;
+    reject(): void;
+  }
+}
+
+// Augment Call type
+declare module './Call' {
+  interface Call {
+    getSid(): string;
+    getState(): string;
+    disconnect(): void;
+    mute(isMuted: boolean): void;
+    hold(onHold: boolean): void;
+    sendDigits(digits: string): void;
+  }
+}
+
+// Allow require for Expo modules
+declare module 'expo-modules-core'; 
