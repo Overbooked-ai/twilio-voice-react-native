@@ -86,6 +86,11 @@ repositories {
   maven {
     url "https://www.jitpack.io"
   }
+  
+  // Add the correct Expo modules repository
+  maven {
+    url "$rootDir/../node_modules/expo-modules-core/android/maven"
+  }
 }
 
 dependencies {
@@ -106,7 +111,7 @@ dependencies {
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   
   // Expo modules support - using the correct implementation
-  implementation 'expo.modules.core:core:1.11.0'
+  implementation project(':expo-modules-core')
   
   // Material design components
   implementation 'com.google.android.material:material:1.6.0'
