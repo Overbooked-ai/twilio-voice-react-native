@@ -77,15 +77,14 @@ repositories {
   google()
   mavenCentral()
   
-  // Expo repositories - multiple approaches to ensure it finds the right modules
-  def expoModulesPath = new File(["$rootDir/../node_modules/expo-modules-core/android/maven",
-                                 "$rootDir/../../expo-modules-core/android/maven",
-                                 "$rootDir/../../node_modules/expo-modules-core/android/maven"].find { 
-    new File(it).exists() 
-  } ?: "$rootDir/../node_modules/expo-modules-core/android/maven")
-  
+  // Add Expo Maven repository
   maven {
-    url = expoModulesPath.toURI()
+    url "$rootDir/../node_modules/expo-modules-core/android/maven"
+  }
+  
+  // Add JitPack repository for Expo modules
+  maven {
+    url "https://www.jitpack.io"
   }
 }
 
@@ -106,8 +105,8 @@ dependencies {
   // Audio management
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   
-  // Expo modules support - using the plain implementation to avoid version issues
-  implementation 'expo.modules.core:core:+'
+  // Expo modules support - using the correct implementation
+  implementation 'expo.modules.core:core:1.11.0'
   
   // Material design components
   implementation 'com.google.android.material:material:1.6.0'
