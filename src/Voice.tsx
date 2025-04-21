@@ -276,7 +276,7 @@ export declare interface Voice {
    */
   connect(
     token: string,
-    options: ConnectOptions = {}
+    options?: ConnectOptions
   ): Promise<Call>;
 }
 
@@ -553,13 +553,13 @@ export class Voice extends EventEmitter {
    */
   async connect(
     token: string,
-    options: ConnectOptions = {}
+    options?: ConnectOptions
   ): Promise<Call> {
     const {
       contactHandle = 'Default Contact',
       notificationDisplayName = undefined,
       params = {},
-    } = options;
+    } = options || {};
 
     if (typeof token !== 'string') {
       throw new InvalidArgumentError(
