@@ -8,6 +8,7 @@ import { Call } from './Call';
 import { CallInvite } from './CallInvite';
 import { Voice } from './Voice';
 import { TwilioError } from './error/TwilioError';
+import { VoiceExpoType } from './types';
 
 // Global TypeScript declarations for Twilio Voice React Native SDK
 
@@ -19,6 +20,14 @@ declare module './Voice' {
     CallDisconnected: string;
     CallInviteCanceled: string;
     CallConnected: string;
+    CallReconnecting: string;
+    CallReconnected: string;
+    CallQualityWarningsChanged: string;
+    CallRinging: string;
+    CallRejected: string;
+    Unregistered: string;
+    Registered: string;
+    ConnectionError: string;
   }
 
   interface Voice {
@@ -27,6 +36,7 @@ declare module './Voice' {
     
     // Static methods
     on(event: string, listener: Function): void;
+    off(event: string, handler: Function): void;
     connect(token: string, params?: Record<string, string>): Promise<Call>;
     register(token: string): Promise<void>;
     unregister(token: string): Promise<void>;
@@ -47,8 +57,27 @@ declare module './CallInvite' {
     getSid(): string;
     getFrom(): string;
     getTo(): string;
+    getState(): string;
     accept(): void;
     reject(): void;
+    from: string;
+    to: string;
+    callSid: string;
+    state: string;
+  }
+}
+
+// Type Extensions for Call
+declare module './Call' {
+  interface Call {
+    getSid(): string;
+    getFrom(): string;
+    getTo(): string;
+    getState(): string;
+    disconnect(): void;
+    mute(isMuted: boolean): void;
+    hold(onHold: boolean): void;
+    sendDigits(digits: string): void;
   }
 }
 
@@ -57,69 +86,45 @@ declare module 'expo-modules-core' {
   export function requireNativeModule(name: string): any;
 }
 
-declare module './Call' {
-  export interface Call {
-    getSid(): string;
-    getFrom(): string;
-    getTo(): string;
-    getState(): string;
-    disconnect(): void;
-    mute(isMuted: boolean): void;
-    hold(onHold: boolean): void;
-    sendDigits(digits: string): void;
-  }
-}
-
 // Add module augmentation for tests
 declare module 'jest' {
   interface Matchers<R> {
     toBeCalledWith(expected: any): R;
     toBeCalled(): R;
+    toMatchObject(object: any): R;
+    toHaveBeenCalled(): R;
+    toHaveBeenCalledWith(...args: any[]): R;
   }
 }
 
-declare module '@twilio/voice-react-native-sdk' {
-  // Extend Voice with missing methods
-  interface Voice {
-    on(event: string, handler: (...args: any[]) => void): void;
-    off(event: string, handler: (...args: any[]) => void): void;
-    
-    // Voice static properties
-    Event: {
+// Declare VoiceExpo interface
+declare module './VoiceExpo' {
+  export { VoiceExpoType };
+} 
+declare module 'expo-modules-core';
+
+declare module '@twilio/voice-react-native' {
+  export class Voice {
+    static Event: {
       CallInvite: string;
       Call: string;
       CallDisconnected: string;
       CallInviteCanceled: string;
-      CallConnected: string;
-      CallRejected: string;
-      Unregistered: string;
-      Registered: string;
-      ConnectionError: string;
     };
-    
-    // Voice methods
-    connect(accessToken: string, params?: Record<string, string>): Promise<Call>;
-    register(accessToken: string): Promise<void>;
-    unregister(accessToken: string): Promise<void>;
-    handleNotification(payload: Record<string, any>): Promise<boolean>;
-    isValidTwilioNotification(payload: Record<string, any>): boolean;
-    setSpeakerPhone?(enabled: boolean): Promise<void>;
-    getDeviceToken?(): Promise<string | null>;
+
+    static connect(accessToken: string, params?: Record<string, string>): Promise<Call>;
+    static disconnect(call: Call): void;
+    static register(accessToken: string): Promise<void>;
+    static unregister(accessToken: string): Promise<void>;
+    static handleNotification(payload: Record<string, any>): Promise<boolean>;
+    static isValidTwilioNotification(payload: Record<string, any>): boolean;
+    static setSpeakerPhone(enabled: boolean): void;
+    static getDeviceToken(): Promise<string>;
+    static on(event: string, callback: (data: any) => void): void;
+    static off(event: string, callback: (data: any) => void): void;
   }
-  
-  // Extend CallInvite with missing methods
-  interface CallInvite {
-    getSid(): string;
-    accept(): void;
-    reject(): void;
-    from: string;
-    to: string;
-    callSid: string;
-    state: string;
-  }
-  
-  // Extend Call with missing methods
-  interface Call {
+
+  export class Call {
     getSid(): string;
     getState(): string;
     disconnect(): void;
@@ -127,125 +132,10 @@ declare module '@twilio/voice-react-native-sdk' {
     hold(onHold: boolean): void;
     sendDigits(digits: string): void;
   }
-  
-  // Add VoiceExpo interface
-  interface VoiceExpoType {
-    connect(accessToken: string, params?: Record<string, string>, displayName?: string): Promise<string>;
-    disconnect(callSid: string): Promise<boolean>;
-    mute(callSid: string, isMuted: boolean): Promise<boolean>;
-    hold(callSid: string, onHold: boolean): Promise<boolean>;
-    sendDigits(callSid: string, digits: string): Promise<boolean>;
-    getCallState(callSid: string): Promise<string | null>;
-    register(accessToken: string, fcmToken?: string): Promise<boolean>;
-    unregister(accessToken: string, fcmToken?: string): Promise<boolean>;
-    handleNotification(payload: Record<string, any>): Promise<boolean>;
-    isTwilioNotification(payload: Record<string, any>): Promise<boolean>;
-    setSpeakerPhone(enabled: boolean): Promise<boolean>;
-    getDeviceToken(): Promise<string | null>;
-    accept(callSid: string): Promise<boolean>;
-    reject(callSid: string): Promise<boolean>;
-  }
-}
 
-// Declare Expo modules
-declare module 'expo-modules-core' {
-  export function requireNativeModule(name: string): any;
-}
-
-// Augment Jest test environment for testing
-interface JestMatchers<R> {
-  toMatchObject(object: any): R;
-  toHaveBeenCalled(): R;
-  toHaveBeenCalledWith(...args: any[]): R;
-}
-
-// Augment the Voice module with the missing methods
-declare module './Voice' {
-  export interface Voice {
-    on(event: string, listener: (data: any) => void): void;
-    connect(token: string, params?: Record<string, string>): Promise<Call>;
-    register(token: string): Promise<void>;
-    unregister(token: string): Promise<void>;
-    handleNotification(payload: Record<string, any>): Promise<boolean>;
-    isValidTwilioNotification(payload: Record<string, any>): boolean;
-    setSpeakerPhone(enabled: boolean): Promise<void>;
-    getDeviceToken(): Promise<string | null>;
-  }
-
-  // Augment the Event enum with the missing properties
-  export interface Event {
-    Call: string;
-    CallInvite: string;
-    CallDisconnected: string;
-    CallInviteCanceled: string;
-    CallConnected: string;
-    CallReconnecting: string;
-    CallReconnected: string;
-    CallQualityWarningsChanged: string;
-    CallRinging: string;
-  }
-}
-
-// Augment the CallInvite interface
-declare module './CallInvite' {
-  export interface CallInvite {
-    getSid(): string;
-    getFrom(): string;
-    getTo(): string;
-    getState(): string;
-    accept(): void;
-    reject(): void;
-  }
-}
-
-// Augment the Call interface
-declare module './Call' {
-  export interface Call {
-    getSid(): string;
-    getFrom(): string;
-    getTo(): string;
-    getState(): string;
-    disconnect(): void;
-    mute(isMuted: boolean): void;
-    hold(onHold: boolean): void;
-    sendDigits(digits: string): void;
-  }
-}
-
-// Augment types for Voice class to add missing static methods
-declare module './Voice' {
-  interface Voice {
-    connect(accessToken: string, params?: Record<string, string>): Promise<Call>;
-    register(accessToken: string): Promise<void>;
-    unregister(accessToken: string): Promise<void>;
-    getDeviceToken(): Promise<string | null>;
-    handleNotification(payload: Record<string, any>): Promise<boolean>;
-    isValidTwilioNotification(payload: Record<string, any>): boolean;
-    setSpeakerPhone(enabled: boolean): Promise<void>;
-    on(event: Event, listener: (...args: any[]) => void): void;
-  }
-}
-
-// Augment CallInvite type
-declare module './CallInvite' {
-  interface CallInvite {
+  export class CallInvite {
     getSid(): string;
     accept(): void;
     reject(): void;
   }
-}
-
-// Augment Call type
-declare module './Call' {
-  interface Call {
-    getSid(): string;
-    getState(): string;
-    disconnect(): void;
-    mute(isMuted: boolean): void;
-    hold(onHold: boolean): void;
-    sendDigits(digits: string): void;
-  }
-}
-
-// Allow require for Expo modules
-declare module 'expo-modules-core'; 
+} 
