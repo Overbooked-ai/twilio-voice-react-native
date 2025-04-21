@@ -7,6 +7,7 @@ import { Event } from './common';
 import { Call } from './Call';
 import { CallInvite } from './CallInvite';
 import { Voice as VoiceOrig } from './Voice';
+import { TwilioError } from './error/TwilioError';
 
 // Global TypeScript declarations for Twilio Voice React Native SDK
 

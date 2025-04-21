@@ -1,20 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": false,
-    "skipLibCheck": true,
     "noImplicitAny": false,
     "strictNullChecks": false,
-    "strictFunctionTypes": false,
-    "strictPropertyInitialization": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "skipLibCheck": true,
+    "noEmit": true
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "**/node_modules/**",
-    "**/__tests__/**"
+    "**/node_modules/**"
   ]
 } 

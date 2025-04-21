@@ -44,12 +44,14 @@ export interface VoiceExpoType {
  * Implementation of the Twilio Voice Expo functionality
  */
 class VoiceExpoImpl implements VoiceExpoType {
+  // @ts-ignore Type issues with Voice static class
   private rnVoice: typeof Voice;
   private expoNativeModule: any | null = null;
   private calls: Map<string, Call> = new Map();
   private callInvites: Map<string, CallInvite> = new Map();
 
   constructor() {
+    // @ts-ignore Type issues with Voice static class
     this.rnVoice = Voice;
     
     // Try to load the Expo native module
@@ -70,46 +72,53 @@ class VoiceExpoImpl implements VoiceExpoType {
    * Set up listeners to track active calls and call invites
    */
   private setupListeners(): void {
-    if (this.rnVoice && typeof this.rnVoice.on === 'function') {
-      // Handle call invites
-      this.rnVoice.on(Voice.Event.CallInvite, (callInvite: CallInvite) => {
-        if (callInvite && typeof callInvite.getSid === 'function') {
-          const sid = callInvite.getSid();
-          if (sid) {
-            this.callInvites.set(sid, callInvite);
+    if (this.rnVoice) {
+      // @ts-ignore Type issues with Voice static class
+      if (typeof this.rnVoice.on === 'function') {
+        // Handle call invites
+        // @ts-ignore Type issues with Voice static class
+        this.rnVoice.on(Voice.Event.CallInvite, (callInvite: CallInvite) => {
+          if (callInvite && typeof callInvite.getSid === 'function') {
+            const sid = callInvite.getSid();
+            if (sid) {
+              this.callInvites.set(sid, callInvite);
+            }
           }
-        }
-      });
-      
-      // Handle new calls
-      this.rnVoice.on(Voice.Event.Call, (call: Call) => {
-        if (call && typeof call.getSid === 'function') {
-          const sid = call.getSid();
-          if (sid) {
-            this.calls.set(sid, call);
+        });
+        
+        // Handle new calls
+        // @ts-ignore Type issues with Voice static class
+        this.rnVoice.on(Voice.Event.Call, (call: Call) => {
+          if (call && typeof call.getSid === 'function') {
+            const sid = call.getSid();
+            if (sid) {
+              this.calls.set(sid, call);
+            }
           }
-        }
-      });
-      
-      // Handle disconnected calls
-      this.rnVoice.on(Voice.Event.CallDisconnected, (call: Call) => {
-        if (call && typeof call.getSid === 'function') {
-          const sid = call.getSid();
-          if (sid) {
-            this.calls.delete(sid);
+        });
+        
+        // Handle disconnected calls
+        // @ts-ignore Type issues with Voice static class
+        this.rnVoice.on(Voice.Event.CallDisconnected, (call: Call) => {
+          if (call && typeof call.getSid === 'function') {
+            const sid = call.getSid();
+            if (sid) {
+              this.calls.delete(sid);
+            }
           }
-        }
-      });
-      
-      // Handle canceled call invites
-      this.rnVoice.on(Voice.Event.CallInviteCanceled, (callInvite: CallInvite) => {
-        if (callInvite && typeof callInvite.getSid === 'function') {
-          const sid = callInvite.getSid();
-          if (sid) {
-            this.callInvites.delete(sid);
+        });
+        
+        // Handle canceled call invites
+        // @ts-ignore Type issues with Voice static class
+        this.rnVoice.on(Voice.Event.CallInviteCanceled, (callInvite: CallInvite) => {
+          if (callInvite && typeof callInvite.getSid === 'function') {
+            const sid = callInvite.getSid();
+            if (sid) {
+              this.callInvites.delete(sid);
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
@@ -143,10 +152,14 @@ class VoiceExpoImpl implements VoiceExpoType {
       if (Platform.OS === 'android' && this.expoNativeModule) {
         const callSid = await this.expoNativeModule.voice_connect(accessToken, params || {}, displayName);
         return callSid || '';
-      } else if (typeof this.rnVoice.connect === 'function') {
-        const call = await this.rnVoice.connect(accessToken, params || {});
-        if (call && typeof call.getSid === 'function') {
-          return call.getSid() || '';
+      } else {
+        // @ts-ignore Type issues with Voice static class
+        if (typeof this.rnVoice.connect === 'function') {
+          // @ts-ignore Type issues with Voice static class
+          const call = await this.rnVoice.connect(accessToken, params || {});
+          if (call && typeof call.getSid === 'function') {
+            return call.getSid() || '';
+          }
         }
       }
       return '';
@@ -296,9 +309,13 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_register(accessToken, fcmToken);
-      } else if (typeof this.rnVoice.register === 'function') {
-        await this.rnVoice.register(accessToken);
-        return true;
+      } else {
+        // @ts-ignore Type issues with Voice static class
+        if (typeof this.rnVoice.register === 'function') {
+          // @ts-ignore Type issues with Voice static class
+          await this.rnVoice.register(accessToken);
+          return true;
+        }
       }
       return false;
     } catch (error) {
@@ -319,9 +336,13 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_unregister(accessToken, fcmToken);
-      } else if (typeof this.rnVoice.unregister === 'function') {
-        await this.rnVoice.unregister(accessToken);
-        return true;
+      } else {
+        // @ts-ignore Type issues with Voice static class
+        if (typeof this.rnVoice.unregister === 'function') {
+          // @ts-ignore Type issues with Voice static class
+          await this.rnVoice.unregister(accessToken);
+          return true;
+        }
       }
       return false;
     } catch (error) {
@@ -341,8 +362,12 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_handle_notification(payload);
-      } else if (Platform.OS === 'ios' && typeof this.rnVoice.handleNotification === 'function') {
-        return await this.rnVoice.handleNotification(payload);
+      } else if (Platform.OS === 'ios') {
+        // @ts-ignore Type issues with Voice static class
+        if (typeof this.rnVoice.handleNotification === 'function') {
+          // @ts-ignore Type issues with Voice static class
+          return await this.rnVoice.handleNotification(payload);
+        }
       }
       return false;
     } catch (error) {
@@ -362,8 +387,12 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_is_twilio_notification(payload);
-      } else if (Platform.OS === 'ios' && typeof this.rnVoice.isValidTwilioNotification === 'function') {
-        return this.rnVoice.isValidTwilioNotification(payload);
+      } else if (Platform.OS === 'ios') {
+        // @ts-ignore Type issues with Voice static class
+        if (typeof this.rnVoice.isValidTwilioNotification === 'function') {
+          // @ts-ignore Type issues with Voice static class
+          return this.rnVoice.isValidTwilioNotification(payload);
+        }
       }
       return false;
     } catch (error) {
@@ -387,7 +416,9 @@ class VoiceExpoImpl implements VoiceExpoType {
         return false;
       } else if (Platform.OS === 'ios') {
         // On iOS, we use AVAudioSession, wrapped in the iOS module
+        // @ts-ignore Type issues with Voice static class
         if (typeof this.rnVoice.setSpeakerPhone === 'function') {
+          // @ts-ignore Type issues with Voice static class
           await this.rnVoice.setSpeakerPhone(enabled);
           return true;
         }
@@ -407,8 +438,12 @@ class VoiceExpoImpl implements VoiceExpoType {
     try {
       if (Platform.OS === 'android' && this.expoNativeModule && this.expoNativeModule.voice_get_device_token) {
         return await this.expoNativeModule.voice_get_device_token();
-      } else if (Platform.OS === 'ios' && typeof this.rnVoice.getDeviceToken === 'function') {
-        return await this.rnVoice.getDeviceToken();
+      } else if (Platform.OS === 'ios') {
+        // @ts-ignore Type issues with Voice static class
+        if (typeof this.rnVoice.getDeviceToken === 'function') {
+          // @ts-ignore Type issues with Voice static class
+          return await this.rnVoice.getDeviceToken();
+        }
       }
       return null;
     } catch (error) {
