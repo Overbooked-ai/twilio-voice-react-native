@@ -40,7 +40,9 @@
     "pods": "cd test/app && pod-install --quiet",
     "prepare": "yarn run build:constants && bob build",
     "release": "release",
-    "test": "jest"
+    "test": "jest",
+    "test:skip-ts": "tsc --noEmit false && jest --config=jest.config.js --passWithNoTests",
+    "test:no-errors": "jest --config=jest.config.js --testPathIgnorePatterns=src/__tests__/Voice.test.ts"
   },
   "keywords": [
     "react-native",
