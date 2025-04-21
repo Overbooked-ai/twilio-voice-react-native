@@ -274,14 +274,14 @@ export declare interface Voice {
    *    * With an {@link TwilioErrors.InvalidArgumentError} when invalid
    *      arguments are passed.
    */
-  async connect(
+  connect(
     token: string,
     {
       contactHandle = 'Default Contact',
       notificationDisplayName = undefined,
       params = {},
     }: ConnectOptions = {}
-  ): Promise<Call>
+  ): Promise<Call>;
 }
 
 /**
