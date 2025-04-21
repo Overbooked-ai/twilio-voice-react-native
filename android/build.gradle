@@ -192,5 +192,10 @@ gradle.projectsEvaluated {
 }
 
 // Disable implicit dependency validation to avoid errors in Expo builds
-ext.android.disableImplicitDependencyValidation = true
+// Instead of using ext.android which doesn't exist, we'll use a different approach
+gradle.startParameter.setMaxWorkerCount(1)
+gradle.startParameter.setParallelProjectExecutionEnabled(false)
+
+// Add a system property to disable the validation
+System.setProperty("org.gradle.internal.tasks.dependencies", "false")
 
