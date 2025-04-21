@@ -133,12 +133,16 @@ afterEvaluate {
   ext.set("resourceDependencyHandledManually", true)
   
   ["Debug", "Release"].each { buildType ->
-    // Access the tasks using a safer relative path reference that's less likely to break
-    def packageResourcesTask = tasks.findByName("package${buildType}Resources")
-    def generateResValuesTask = tasks.findByName("generate${buildType}ResValues")
+    // Handle both hyphenated and underscored module names
+    def moduleNames = ["twilio-voice-react-native-sdk", "twilio_voice-react-native-sdk"]
     
-    if (packageResourcesTask != null && generateResValuesTask != null) {
-      packageResourcesTask.dependsOn(generateResValuesTask)
+    moduleNames.each { moduleName ->
+      def packageResourcesTask = tasks.findByName(":${moduleName}:package${buildType}Resources")
+      def generateResValuesTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
+      
+      if (packageResourcesTask != null && generateResValuesTask != null) {
+        packageResourcesTask.dependsOn(generateResValuesTask)
+      }
     }
   }
 }
@@ -147,9 +151,13 @@ afterEvaluate {
 project.gradle.taskGraph.whenReady { graph ->
   graph.allTasks.findAll { it.name.matches("package(Debug|Release)Resources") }.each { task ->
     def buildType = task.name.contains("Debug") ? "Debug" : "Release"
-    def genTask = tasks.findByName("generate${buildType}ResValues")
-    if (genTask != null) {
-      task.mustRunAfter(genTask)
+    def moduleNames = ["twilio-voice-react-native-sdk", "twilio_voice-react-native-sdk"]
+    
+    moduleNames.each { moduleName ->
+      def genTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
+      if (genTask != null) {
+        task.mustRunAfter(genTask)
+      }
     }
   }
 }
@@ -157,10 +165,22 @@ project.gradle.taskGraph.whenReady { graph ->
 // Handle hyphenated module names (special compatibility for Expo)
 gradle.projectsEvaluated {
   tasks.all { task ->
-    if (task.path.contains('twilio-voice-react-native-sdk') || task.path.contains('twilio_voice-react-native-sdk')) {
+    def moduleNames = ["twilio-voice-react-native-sdk", "twilio_voice-react-native-sdk"]
+    if (moduleNames.any { task.path.contains(it) }) {
       // Fix any potential circular dependencies
       task.dependsOn = task.dependsOn.findAll { dep -> 
         dep != null && !dep.toString().contains(task.path) 
+      }
+      
+      // Ensure resource generation tasks run before packaging
+      if (task.name.startsWith("package") && task.name.endsWith("Resources")) {
+        def buildType = task.name.contains("Debug") ? "Debug" : "Release"
+        moduleNames.each { moduleName ->
+          def genTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
+          if (genTask != null) {
+            task.dependsOn(genTask)
+          }
+        }
       }
     }
   }
