@@ -37,12 +37,14 @@
     "check:type": "tsc --noEmit",
     "check:api": "git diff --exit-code src/error/generated.ts api/",
     "check": "yarn run build:constants && yarn run build:errors && yarn run build:docs && yarn run check:api && yarn run check:type && yarn run check:lint && yarn run check:test --coverage",
+    "check:skip-tests": "yarn run build:constants && yarn run build:errors && yarn run build:docs && yarn run check:api && yarn run check:type && yarn run check:lint",
     "pods": "cd test/app && pod-install --quiet",
     "prepare": "yarn run build:constants && bob build",
     "release": "release",
     "test": "jest",
     "test:skip-ts": "tsc --noEmit false && jest --config=jest.config.js --passWithNoTests",
-    "test:no-errors": "jest --config=jest.config.js --testPathIgnorePatterns=src/__tests__/Voice.test.ts"
+    "test:no-errors": "jest --config=jest.config.js --testPathIgnorePatterns=src/__tests__/Voice.test.ts",
+    "test:with-test-config": "tsc -p tsconfig.test.json && jest --config=jest.config.js"
   },
   "keywords": [
     "react-native",

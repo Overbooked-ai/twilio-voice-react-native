@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,           /* Use noEmit for tests */
+    "emitDeclarationOnly": false, /* Don't emit declaration files for tests */
+    "skipLibCheck": true,      /* Skip checking libraries */
+    "noImplicitAny": false,    /* Allow implicit any in tests */
+    "strictNullChecks": false, /* Disable strict null checks in tests */
+    "noUnusedLocals": false,   /* Allow unused locals in tests */
+    "noUnusedParameters": false /* Allow unused parameters in tests */
+  },
+  "include": ["src/**/*", "src/__tests__/**/*"],
+  "exclude": ["node_modules", "babel.config.js"]
+} 
