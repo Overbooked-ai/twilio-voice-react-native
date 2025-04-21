@@ -7,7 +7,8 @@ buildscript {
     'androidxCore'       : '1.10.1',
     'androidxLifecycle'  : '2.2.0',
     'audioSwitch'        : '1.1.8',
-    'firebaseMessaging'  : '23.4.0'
+    'firebaseMessaging'  : '23.4.0',
+    'kotlin'             : '1.9.24'
   ]
   if (project == rootProject) {
     repositories {
@@ -18,11 +19,13 @@ buildscript {
     dependencies {
       classpath "com.android.tools.build:gradle:${versions.androidGradlePlugin}"
       classpath "com.google.gms:google-services:${versions.googleServices}"
+      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
     }
   }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 def safeExtGet(prop, fallback) {
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
@@ -50,18 +53,50 @@ android {
     sourceCompatibility versions.java
     targetCompatibility versions.java
   }
+  kotlinOptions {
+    jvmTarget = versions.java.toString()
+  }
   buildFeatures {
     // for buildconfig construction
     buildConfig true
   }
 }
 
-repositories {
-  google()
-  mavenCentral()
-  maven {
-    url 'https://maven.google.com/'
-    name 'Google'
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    maven {
+      url 'https://maven.google.com/'
+      name 'Google'
+    }
+    // Primary Expo Maven repositories
+    maven {
+      url "$rootDir/../node_modules/expo/maven"
+      name 'Expo Maven'
+    }
+    maven {
+      url "$rootDir/../node_modules/expo-modules-core/maven"
+      name 'Expo Modules Core Maven'
+    }
+    // Fallback to parent project's node_modules
+    maven {
+      url "${project.rootProject.projectDir}/../node_modules/expo/maven"
+      name 'Expo Maven (root)'
+    }
+    maven {
+      url "${project.rootProject.projectDir}/../node_modules/expo-modules-core/maven"
+      name 'Expo Modules Core Maven (root)'
+    }
+    // Additional fallback paths
+    maven {
+      url "$rootDir/../../../node_modules/expo-modules-core/maven"
+      name 'Expo Modules Core Maven (deep fallback)'
+    }
+    // FlatDir fallback for direct AAR access
+    flatDir {
+      dirs "${rootDir}/../node_modules/expo-modules-core/android/build/outputs/aar"
+    }
   }
 }
 
@@ -74,6 +109,12 @@ dependencies {
   implementation "com.google.firebase:firebase-messaging:${versions.firebaseMessaging}"
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   implementation 'com.google.android.material:material:1.1.0'
+  
+  // Pick the version that the host app already has (set by Expo prebuild)
+  def expoCoreVersion = rootProject.ext.has('expoModulesCoreVersion')
+        ? rootProject.ext.expoModulesCoreVersion
+        : '2.0.0'           // fallback for bare RN users
+  compileOnly("expo.modules:expo-modules-core:$expoCoreVersion")
 
   constraints {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
@@ -86,4 +127,6 @@ dependencies {
       because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
     }
   }
+
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}"
 }
