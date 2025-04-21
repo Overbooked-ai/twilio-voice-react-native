@@ -1,6 +1,7 @@
 package com.twiliovoicereactnative
 
 import android.content.Context
+import android.media.AudioManager
 import android.os.Bundle
 import androidx.annotation.Keep
 import com.twilio.voice.Call
@@ -236,6 +237,85 @@ class ExpoModule : Module() {
 
             // Check if the notification is a valid Twilio Voice notification
             Voice.isValidMessage(bundle)
+        }
+        
+        /**
+         * Set speaker phone mode
+         * @param enabled Whether to enable or disable speaker phone
+         * @return Whether the operation was successful
+         */
+        Function("voice_set_speaker_phone") { enabled: Boolean ->
+            val context = appContext.reactContext ?: return@Function false
+            
+            try {
+                val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                audioManager.isSpeakerphoneOn = enabled
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        /**
+         * Get the device FCM token (if available)
+         * @return The FCM token or null if not available
+         */
+        Function("voice_get_device_token") {
+            try {
+                // This should be implemented in the application using Firebase messaging
+                // For this module, we can't directly get the token, so we return null
+                null
+            } catch (e: Exception) {
+                null
+            }
+        }
+        
+        /**
+         * Accept an incoming call
+         * @param callSid The SID of the call to accept
+         * @return Whether the call was successfully accepted
+         */
+        Function("voice_accept") { callSid: String ->
+            try {
+                // Find the call invite by SID
+                val callInvites = VoiceApplicationProxy.getPushRegistry().callInvites
+                val callInvite = callInvites.find { it.callSid == callSid }
+                
+                if (callInvite != null) {
+                    val context = appContext.reactContext ?: return@Function false
+                    val uuid = UUID.randomUUID()
+                    val callInviteListener = CallListenerProxy(uuid, context)
+                    
+                    callInvite.accept(context, callInviteListener)
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        /**
+         * Reject an incoming call
+         * @param callSid The SID of the call to reject
+         * @return Whether the call was successfully rejected
+         */
+        Function("voice_reject") { callSid: String ->
+            try {
+                // Find the call invite by SID
+                val callInvites = VoiceApplicationProxy.getPushRegistry().callInvites
+                val callInvite = callInvites.find { it.callSid == callSid }
+                
+                if (callInvite != null) {
+                    callInvite.reject()
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 } 

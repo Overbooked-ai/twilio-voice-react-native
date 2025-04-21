@@ -13,17 +13,16 @@ buildscript {
     'compileSdk'         : 34,
     'targetSdk'          : 34
   ]
-  if (project == rootProject) {
-    repositories {
-      google()
-      mavenCentral()
-    }
+  
+  repositories {
+    google()
+    mavenCentral()
+  }
 
-    dependencies {
-      classpath "com.android.tools.build:gradle:${versions.androidGradlePlugin}"
-      classpath "com.google.gms:google-services:${versions.googleServices}"
-      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
-    }
+  dependencies {
+    classpath "com.android.tools.build:gradle:${versions.androidGradlePlugin}"
+    classpath "com.google.gms:google-services:${versions.googleServices}"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
   }
 }
 
@@ -56,8 +55,8 @@ android {
   }
   
   compileOptions {
-    sourceCompatibility versions.java
-    targetCompatibility versions.java
+    sourceCompatibility JavaVersion.VERSION_11
+    targetCompatibility JavaVersion.VERSION_11
   }
   
   buildFeatures {
@@ -67,19 +66,26 @@ android {
   kotlinOptions {
     jvmTarget = '11'
   }
+  
+  // Disable task-specific errors that can occur in Expo builds
+  tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+  }
 }
 
 repositories {
   google()
   mavenCentral()
-  // Add jcenter() for older Expo modules support
-  jcenter()
-  // Add Expo repository
+  
+  // Expo repositories - multiple approaches to ensure it finds the right modules
+  def expoModulesPath = new File(["$rootDir/../node_modules/expo-modules-core/android/maven",
+                                 "$rootDir/../../expo-modules-core/android/maven",
+                                 "$rootDir/../../node_modules/expo-modules-core/android/maven"].find { 
+    new File(it).exists() 
+  } ?: "$rootDir/../node_modules/expo-modules-core/android/maven")
+  
   maven {
-    url "$rootDir/../node_modules/expo/node_modules/expo-modules-core/android/maven"
-  }
-  maven {
-    url "$rootDir/../node_modules/expo-modules-core/android/maven"
+    url = expoModulesPath.toURI()
   }
 }
 
@@ -100,7 +106,7 @@ dependencies {
   // Audio management
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   
-  // Expo modules support - updated to use the correct coordinates
+  // Expo modules support - using the plain implementation to avoid version issues
   implementation 'expo.modules.core:core:+'
   
   // Material design components
@@ -117,30 +123,41 @@ dependencies {
   }
 }
 
-// Make sure the resources task gets executed before packaging resources
+// Generate resources fix - a more efficient approach without trying to configure tasks directly
 afterEvaluate {
-  android.buildTypes.each { buildType ->
-    def buildTypeName = buildType.name.capitalize()
+  // Add a simple property to indicate we're handling resource dependency in a non-standard way
+  ext.set("resourceDependencyHandledManually", true)
+  
+  ["Debug", "Release"].each { buildType ->
+    // Access the tasks using a safer relative path reference that's less likely to break
+    def packageResourcesTask = tasks.findByName("package${buildType}Resources")
+    def generateResValuesTask = tasks.findByName("generate${buildType}ResValues")
     
-    // Generate task names for packageResources and generateResValues
-    def packageResourcesTaskName = "package${buildTypeName}Resources"
-    def generateResValuesTaskName = "generate${buildTypeName}ResValues"
-    
-    // Add dependency only if both tasks exist
-    if (tasks.findByName(packageResourcesTaskName) != null && 
-        tasks.findByName(generateResValuesTaskName) != null) {
-      tasks.named(packageResourcesTaskName).configure {
-        dependsOn(tasks.named(generateResValuesTaskName))
-      }
+    if (packageResourcesTask != null && generateResValuesTask != null) {
+      packageResourcesTask.dependsOn(generateResValuesTask)
     }
   }
 }
 
-// Disabling implicit dependency validation to avoid task graph issues
+// Custom handling for task execution order
+project.gradle.taskGraph.whenReady { graph ->
+  graph.allTasks.findAll { it.name.matches("package(Debug|Release)Resources") }.each { task ->
+    def buildType = task.name.contains("Debug") ? "Debug" : "Release"
+    def genTask = tasks.findByName("generate${buildType}ResValues")
+    if (genTask != null) {
+      task.mustRunAfter(genTask)
+    }
+  }
+}
+
+// Handle hyphenated module names (special compatibility for Expo)
 gradle.projectsEvaluated {
-  tasks.withType(com.android.build.gradle.internal.tasks.AndroidVariantTask) { task ->
-    task.dependsOn = task.dependsOn.findAll { 
-      it != null && it.toString() != 'null' 
+  tasks.all { task ->
+    if (task.path.contains('twilio-voice-react-native-sdk') || task.path.contains('twilio_voice-react-native-sdk')) {
+      // Fix any potential circular dependencies
+      task.dependsOn = task.dependsOn.findAll { dep -> 
+        dep != null && !dep.toString().contains(task.path) 
+      }
     }
   }
 }
