@@ -9,17 +9,14 @@ module.exports = {
     '/node_modules/',
     '<rootDir>/src/__tests__/Voice.test.ts'
   ],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|react-native-.*)/)'
   ],
-  setupFiles: [
-    '<rootDir>/jest.setup.js'
-  ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
-    '!src/error/generated.ts',
-    '!src/__tests__/**/*'
+    '!src/__tests__/**/*',
+    '!src/error/generated.ts'
   ]
 }; 

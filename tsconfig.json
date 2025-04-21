@@ -3,7 +3,7 @@
     "target": "esnext",
     "module": "esnext",
     "lib": ["esnext"],
-    "jsx": "react-native",
+    "jsx": "react",
     "declaration": true,
     "sourceMap": true,
     "outDir": "./lib",
@@ -28,10 +28,15 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
+    "baseUrl": "./",
     "paths": {
-      "*": ["src/*"]
-    }
+      "@twilio/voice-react-native-sdk": ["./src/index"],
+      "expo-modules-core": ["./src/expo-modules.d.ts"]
+    },
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noImplicitUseStrict": false,
+    "noStrictGenericChecks": false
   },
   "include": ["src/**/*"],
   "exclude": [
@@ -39,6 +44,8 @@
     "**/__tests__/**/*",
     "babel.config.js",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "lib",
+    "node_modules/expo-modules-core"
   ]
 }

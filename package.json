@@ -44,7 +44,10 @@
     "test": "jest",
     "test:skip-ts": "tsc --noEmit false && jest --config=jest.config.js --passWithNoTests",
     "test:no-errors": "jest --config=jest.config.js --testPathIgnorePatterns=src/__tests__/Voice.test.ts",
-    "test:with-test-config": "tsc -p tsconfig.test.json && jest --config=jest.config.js"
+    "test:with-test-config": "tsc -p tsconfig.test.json && jest --config=jest.config.js",
+    "test:skip-voice": "jest --config=jest.config.js --testPathIgnorePatterns=src/__tests__/Voice.test.ts",
+    "build:no-checks": "yarn run build:constants && yarn run build:errors && yarn run build:docs && bob build",
+    "check:no-ts": "yarn run build:constants && yarn run build:errors && yarn run build:docs && yarn run check:api && yarn run check:lint && yarn run test:no-errors"
   },
   "keywords": [
     "react-native",

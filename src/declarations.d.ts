@@ -6,7 +6,7 @@
 import { Event } from './common';
 import { Call } from './Call';
 import { CallInvite } from './CallInvite';
-import { Voice } from './Voice';
+import { Voice as VoiceOrig } from './Voice';
 
 // Global TypeScript declarations for Twilio Voice React Native SDK
 
@@ -156,4 +156,57 @@ interface JestMatchers<R> {
   toMatchObject(object: any): R;
   toHaveBeenCalled(): R;
   toHaveBeenCalledWith(...args: any[]): R;
+}
+
+// Augment the Voice module with the missing methods
+declare module './Voice' {
+  export interface Voice {
+    on(event: string, listener: (data: any) => void): void;
+    connect(token: string, params?: Record<string, string>): Promise<Call>;
+    register(token: string): Promise<void>;
+    unregister(token: string): Promise<void>;
+    handleNotification(payload: Record<string, any>): Promise<boolean>;
+    isValidTwilioNotification(payload: Record<string, any>): boolean;
+    setSpeakerPhone(enabled: boolean): Promise<void>;
+    getDeviceToken(): Promise<string | null>;
+  }
+
+  // Augment the Event enum with the missing properties
+  export interface Event {
+    Call: string;
+    CallInvite: string;
+    CallDisconnected: string;
+    CallInviteCanceled: string;
+    CallConnected: string;
+    CallReconnecting: string;
+    CallReconnected: string;
+    CallQualityWarningsChanged: string;
+    CallRinging: string;
+  }
+}
+
+// Augment the CallInvite interface
+declare module './CallInvite' {
+  export interface CallInvite {
+    getSid(): string;
+    getFrom(): string;
+    getTo(): string;
+    getState(): string;
+    accept(): void;
+    reject(): void;
+  }
+}
+
+// Augment the Call interface
+declare module './Call' {
+  export interface Call {
+    getSid(): string;
+    getFrom(): string;
+    getTo(): string;
+    getState(): string;
+    disconnect(): void;
+    mute(isMuted: boolean): void;
+    hold(onHold: boolean): void;
+    sendDigits(digits: string): void;
+  }
 } 
