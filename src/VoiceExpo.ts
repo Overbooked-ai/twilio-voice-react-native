@@ -4,6 +4,9 @@ import { Voice } from './Voice';
 import type { Call } from './Call';
 import type { CallInvite } from './CallInvite';
 
+// Import type declarations
+import './declarations.d.ts';
+
 /**
  * Comprehensive interface for Twilio Voice functionality in Expo
  */
@@ -67,29 +70,44 @@ class VoiceExpoImpl implements VoiceExpoType {
    * Set up listeners to track active calls and call invites
    */
   private setupListeners(): void {
-    if (this.rnVoice) {
-      // Use the Events enum defined in Voice for type safety
-      this.rnVoice.on && this.rnVoice.on(Voice.Event.CallInvite, (callInvite: CallInvite) => {
-        if (callInvite && callInvite.getSid && callInvite.getSid()) {
-          this.callInvites.set(callInvite.getSid(), callInvite);
+    if (this.rnVoice && typeof this.rnVoice.on === 'function') {
+      // Handle call invites
+      this.rnVoice.on(Voice.Event.CallInvite, (callInvite: CallInvite) => {
+        if (callInvite && typeof callInvite.getSid === 'function') {
+          const sid = callInvite.getSid();
+          if (sid) {
+            this.callInvites.set(sid, callInvite);
+          }
         }
       });
       
-      this.rnVoice.on && this.rnVoice.on(Voice.Event.Call, (call: Call) => {
-        if (call && call.getSid && call.getSid()) {
-          this.calls.set(call.getSid(), call);
+      // Handle new calls
+      this.rnVoice.on(Voice.Event.Call, (call: Call) => {
+        if (call && typeof call.getSid === 'function') {
+          const sid = call.getSid();
+          if (sid) {
+            this.calls.set(sid, call);
+          }
         }
       });
       
-      this.rnVoice.on && this.rnVoice.on(Voice.Event.CallDisconnected, (call: Call) => {
-        if (call && call.getSid && call.getSid()) {
-          this.calls.delete(call.getSid());
+      // Handle disconnected calls
+      this.rnVoice.on(Voice.Event.CallDisconnected, (call: Call) => {
+        if (call && typeof call.getSid === 'function') {
+          const sid = call.getSid();
+          if (sid) {
+            this.calls.delete(sid);
+          }
         }
       });
       
-      this.rnVoice.on && this.rnVoice.on(Voice.Event.CallInviteCanceled, (callInvite: CallInvite) => {
-        if (callInvite && callInvite.getSid && callInvite.getSid()) {
-          this.callInvites.delete(callInvite.getSid());
+      // Handle canceled call invites
+      this.rnVoice.on(Voice.Event.CallInviteCanceled, (callInvite: CallInvite) => {
+        if (callInvite && typeof callInvite.getSid === 'function') {
+          const sid = callInvite.getSid();
+          if (sid) {
+            this.callInvites.delete(sid);
+          }
         }
       });
     }
@@ -125,10 +143,13 @@ class VoiceExpoImpl implements VoiceExpoType {
       if (Platform.OS === 'android' && this.expoNativeModule) {
         const callSid = await this.expoNativeModule.voice_connect(accessToken, params || {}, displayName);
         return callSid || '';
-      } else {
+      } else if (typeof this.rnVoice.connect === 'function') {
         const call = await this.rnVoice.connect(accessToken, params || {});
-        return call?.getSid() || '';
+        if (call && typeof call.getSid === 'function') {
+          return call.getSid() || '';
+        }
       }
+      return '';
     } catch (error) {
       console.error('VoiceExpo.connect error:', error);
       throw error;
@@ -251,8 +272,9 @@ class VoiceExpoImpl implements VoiceExpoType {
         return await this.expoNativeModule.voice_get_call_state(callSid);
       } else {
         const call = this.getCallBySid(callSid);
-        if (call) {
-          return call.getState();
+        if (call && typeof call.getState === 'function') {
+          const state = call.getState();
+          return typeof state === 'string' ? state : String(state);
         }
         return null;
       }
@@ -274,10 +296,11 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_register(accessToken, fcmToken);
-      } else {
+      } else if (typeof this.rnVoice.register === 'function') {
         await this.rnVoice.register(accessToken);
         return true;
       }
+      return false;
     } catch (error) {
       console.error('VoiceExpo.register error:', error);
       return false;
@@ -296,10 +319,11 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_unregister(accessToken, fcmToken);
-      } else {
+      } else if (typeof this.rnVoice.unregister === 'function') {
         await this.rnVoice.unregister(accessToken);
         return true;
       }
+      return false;
     } catch (error) {
       console.error('VoiceExpo.unregister error:', error);
       return false;
@@ -317,7 +341,7 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_handle_notification(payload);
-      } else if (Platform.OS === 'ios') {
+      } else if (Platform.OS === 'ios' && typeof this.rnVoice.handleNotification === 'function') {
         return await this.rnVoice.handleNotification(payload);
       }
       return false;
@@ -338,7 +362,7 @@ class VoiceExpoImpl implements VoiceExpoType {
       
       if (Platform.OS === 'android' && this.expoNativeModule) {
         return await this.expoNativeModule.voice_is_twilio_notification(payload);
-      } else if (Platform.OS === 'ios') {
+      } else if (Platform.OS === 'ios' && typeof this.rnVoice.isValidTwilioNotification === 'function') {
         return this.rnVoice.isValidTwilioNotification(payload);
       }
       return false;
@@ -363,7 +387,7 @@ class VoiceExpoImpl implements VoiceExpoType {
         return false;
       } else if (Platform.OS === 'ios') {
         // On iOS, we use AVAudioSession, wrapped in the iOS module
-        if (this.rnVoice.setSpeakerPhone) {
+        if (typeof this.rnVoice.setSpeakerPhone === 'function') {
           await this.rnVoice.setSpeakerPhone(enabled);
           return true;
         }
@@ -383,7 +407,7 @@ class VoiceExpoImpl implements VoiceExpoType {
     try {
       if (Platform.OS === 'android' && this.expoNativeModule && this.expoNativeModule.voice_get_device_token) {
         return await this.expoNativeModule.voice_get_device_token();
-      } else if (Platform.OS === 'ios' && this.rnVoice.getDeviceToken) {
+      } else if (Platform.OS === 'ios' && typeof this.rnVoice.getDeviceToken === 'function') {
         return await this.rnVoice.getDeviceToken();
       }
       return null;
@@ -403,7 +427,7 @@ class VoiceExpoImpl implements VoiceExpoType {
       if (!callSid) return false;
       
       const callInvite = this.getCallInviteBySid(callSid);
-      if (callInvite) {
+      if (callInvite && typeof callInvite.accept === 'function') {
         callInvite.accept();
         return true;
       }
@@ -430,7 +454,7 @@ class VoiceExpoImpl implements VoiceExpoType {
       if (!callSid) return false;
       
       const callInvite = this.getCallInviteBySid(callSid);
-      if (callInvite) {
+      if (callInvite && typeof callInvite.reject === 'function') {
         callInvite.reject();
         return true;
       }
