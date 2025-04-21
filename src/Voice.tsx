@@ -871,34 +871,6 @@ export class Voice extends EventEmitter {
  */
 export namespace Voice {
   /**
-   * Options to pass to the {@link (Voice:class).connect} method.
-   */
-  export type ConnectOptions = {
-    /**
-     * Custom parameters to send to the TwiML Application.
-     */
-    params?: Record<string, string>;
-    /**
-     * A CallKit display name that will show in the call history as the contact
-     * handle.
-     *
-     * @remarks
-     * Unsupported platforms:
-     * - Android
-     */
-    contactHandle?: string;
-    /**
-     * The display name that will show in the Android notifications. Passing an
-     * empty string will be considered the same as if `undefined` were passed.
-     *
-     * @remarks
-     * Unsupported platforms:
-     * - iOS
-     */
-    notificationDisplayName?: string;
-  };
-
-  /**
    * Enumeration of all event strings emitted by {@link (Voice:class)} objects.
    */
   export enum Event {
