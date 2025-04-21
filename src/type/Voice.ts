@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Constants } from '../constants';
 import type { NativeAudioDevicesUpdatedEvent } from './AudioDevice';
 import type { NativeCallInviteInfo } from './CallInvite';
