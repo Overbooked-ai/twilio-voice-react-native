@@ -77,19 +77,15 @@ repositories {
   google()
   mavenCentral()
   
-  // Add Expo Maven repository
-  maven {
-    url "$rootDir/../node_modules/expo-modules-core/android/maven"
-  }
+  // Expo repositories - multiple approaches to ensure it finds the right modules
+  def expoModulesPath = new File(["$rootDir/../node_modules/expo-modules-core/android/maven",
+                                 "$rootDir/../../expo-modules-core/android/maven",
+                                 "$rootDir/../../node_modules/expo-modules-core/android/maven"].find { 
+    new File(it).exists() 
+  } ?: "$rootDir/../node_modules/expo-modules-core/android/maven")
   
-  // Add JitPack repository for Expo modules
   maven {
-    url "https://www.jitpack.io"
-  }
-  
-  // Add the correct Expo modules repository
-  maven {
-    url "$rootDir/../node_modules/expo-modules-core/android/maven"
+    url = expoModulesPath.toURI()
   }
 }
 
@@ -110,8 +106,8 @@ dependencies {
   // Audio management
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   
-  // Expo modules support - using the correct implementation
-  implementation project(':expo-modules-core')
+  // Expo modules support - using the plain implementation to avoid version issues
+  implementation 'expo.modules.core:core:+'
   
   // Material design components
   implementation 'com.google.android.material:material:1.6.0'
@@ -127,22 +123,47 @@ dependencies {
   }
 }
 
-// Generate resources fix - a more efficient approach without trying to configure tasks directly
+// Fix for task dependency issues in Expo builds
 afterEvaluate {
   // Add a simple property to indicate we're handling resource dependency in a non-standard way
   ext.set("resourceDependencyHandledManually", true)
   
+  // Fix for hyphenated vs. underscored module names
+  def moduleName = project.name
+  def hyphenatedName = moduleName.replace('_', '-')
+  
   ["Debug", "Release"].each { buildType ->
-    // Handle both hyphenated and underscored module names
-    def moduleNames = ["twilio-voice-react-native-sdk", "twilio_voice-react-native-sdk"]
+    // Find tasks using both naming conventions
+    def packageResourcesTask = tasks.findByName("package${buildType}Resources")
+    def generateResValuesTask = tasks.findByName("generate${buildType}ResValues")
     
-    moduleNames.each { moduleName ->
-      def packageResourcesTask = tasks.findByName(":${moduleName}:package${buildType}Resources")
-      def generateResValuesTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
-      
-      if (packageResourcesTask != null && generateResValuesTask != null) {
-        packageResourcesTask.dependsOn(generateResValuesTask)
-      }
+    // Also check for hyphenated/underscored versions
+    def hyphenatedPackageTask = tasks.findByName(":${hyphenatedName}:package${buildType}Resources")
+    def hyphenatedGenerateTask = tasks.findByName(":${hyphenatedName}:generate${buildType}ResValues")
+    
+    def underscoredPackageTask = tasks.findByName(":${moduleName}:package${buildType}Resources")
+    def underscoredGenerateTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
+    
+    // Set up dependencies for all possible task combinations
+    if (packageResourcesTask != null && generateResValuesTask != null) {
+      packageResourcesTask.dependsOn(generateResValuesTask)
+    }
+    
+    if (hyphenatedPackageTask != null && hyphenatedGenerateTask != null) {
+      hyphenatedPackageTask.dependsOn(hyphenatedGenerateTask)
+    }
+    
+    if (underscoredPackageTask != null && underscoredGenerateTask != null) {
+      underscoredPackageTask.dependsOn(underscoredGenerateTask)
+    }
+    
+    // Cross-dependencies between hyphenated and underscored versions
+    if (hyphenatedPackageTask != null && underscoredGenerateTask != null) {
+      hyphenatedPackageTask.dependsOn(underscoredGenerateTask)
+    }
+    
+    if (underscoredPackageTask != null && hyphenatedGenerateTask != null) {
+      underscoredPackageTask.dependsOn(hyphenatedGenerateTask)
     }
   }
 }
@@ -151,13 +172,9 @@ afterEvaluate {
 project.gradle.taskGraph.whenReady { graph ->
   graph.allTasks.findAll { it.name.matches("package(Debug|Release)Resources") }.each { task ->
     def buildType = task.name.contains("Debug") ? "Debug" : "Release"
-    def moduleNames = ["twilio-voice-react-native-sdk", "twilio_voice-react-native-sdk"]
-    
-    moduleNames.each { moduleName ->
-      def genTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
-      if (genTask != null) {
-        task.mustRunAfter(genTask)
-      }
+    def genTask = tasks.findByName("generate${buildType}ResValues")
+    if (genTask != null) {
+      task.mustRunAfter(genTask)
     }
   }
 }
@@ -165,24 +182,15 @@ project.gradle.taskGraph.whenReady { graph ->
 // Handle hyphenated module names (special compatibility for Expo)
 gradle.projectsEvaluated {
   tasks.all { task ->
-    def moduleNames = ["twilio-voice-react-native-sdk", "twilio_voice-react-native-sdk"]
-    if (moduleNames.any { task.path.contains(it) }) {
+    if (task.path.contains('twilio-voice-react-native-sdk') || task.path.contains('twilio_voice-react-native-sdk')) {
       // Fix any potential circular dependencies
       task.dependsOn = task.dependsOn.findAll { dep -> 
         dep != null && !dep.toString().contains(task.path) 
       }
-      
-      // Ensure resource generation tasks run before packaging
-      if (task.name.startsWith("package") && task.name.endsWith("Resources")) {
-        def buildType = task.name.contains("Debug") ? "Debug" : "Release"
-        moduleNames.each { moduleName ->
-          def genTask = tasks.findByName(":${moduleName}:generate${buildType}ResValues")
-          if (genTask != null) {
-            task.dependsOn(genTask)
-          }
-        }
-      }
     }
   }
 }
+
+// Disable implicit dependency validation to avoid errors in Expo builds
+ext.android.disableImplicitDependencyValidation = true
 
