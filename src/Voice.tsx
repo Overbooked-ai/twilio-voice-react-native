@@ -281,7 +281,7 @@ export declare interface Voice {
       notificationDisplayName = undefined,
       params = {},
     }: ConnectOptions = {}
-  ): Promise<Call>;
+  ): Promise<Call>
 }
 
 /**
