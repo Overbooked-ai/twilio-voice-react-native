@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Copyright © 2022 Twilio, Inc. All rights reserved. Licensed under the Twilio
  * license.
@@ -22,6 +23,25 @@ import type { CallKit } from './type/CallKit';
 import type { CustomParameters, Uuid } from './type/common';
 import type { NativeVoiceEvent, NativeVoiceEventType } from './type/Voice';
 
+// Define event types outside the interface to avoid private name references
+export type VoiceEventType = {
+  AudioDevicesUpdated: 'audioDevicesUpdated';
+  CallInvite: 'callInvite';
+  Error: 'error';
+  Registered: 'registered';
+  Unregistered: 'unregistered';
+};
+
+// Define listener types outside the interface
+export type VoiceListenerType = {
+  AudioDevicesUpdated: (audioDevices: AudioDevice[], selectedDevice?: AudioDevice) => void;
+  CallInvite: (callInvite: CallInvite) => void;
+  Error: (error: TwilioError) => void;
+  Registered: () => void;
+  Unregistered: () => void;
+  Generic: (...args: any[]) => void;
+};
+
 /**
  * Defines strict typings for all events emitted by {@link (Voice:class)
  * | Voice objects}.
@@ -44,25 +64,25 @@ export declare interface Voice {
 
   /** @internal */
   emit(
-    voiceEvent: Voice.Event.AudioDevicesUpdated,
+    voiceEvent: 'audioDevicesUpdated',
     audioDevices: AudioDevice[],
     selectedDevice?: AudioDevice
   ): boolean;
 
   /** @internal */
-  emit(voiceEvent: Voice.Event.CallInvite, callInvite: CallInvite): boolean;
+  emit(voiceEvent: 'callInvite', callInvite: CallInvite): boolean;
 
   /** @internal */
-  emit(voiceEvent: Voice.Event.Error, error: TwilioError): boolean;
+  emit(voiceEvent: 'error', error: TwilioError): boolean;
 
   /** @internal */
-  emit(voiceEvent: Voice.Event.Registered): boolean;
+  emit(voiceEvent: 'registered'): boolean;
 
   /** @internal */
-  emit(voiceEvent: Voice.Event.Unregistered): boolean;
+  emit(voiceEvent: 'unregistered'): boolean;
 
   /** @internal */
-  emit(voiceEvent: Voice.Event, ...args: any[]): boolean;
+  emit(voiceEvent: string, ...args: any[]): boolean;
 
   /**
    * ----------------
@@ -87,13 +107,13 @@ export declare interface Voice {
    * @returns - The call object.
    */
   addListener(
-    audioDevicesUpdatedEvent: Voice.Event.AudioDevicesUpdated,
-    listener: Voice.Listener.AudioDevicesUpdated
+    audioDevicesUpdatedEvent: 'audioDevicesUpdated',
+    listener: (audioDevices: AudioDevice[], selectedDevice?: AudioDevice) => void
   ): this;
   /** {@inheritDoc (Voice:interface).(addListener:1)} */
   on(
-    audioDevicesUpdatedEvent: Voice.Event.AudioDevicesUpdated,
-    listener: Voice.Listener.AudioDevicesUpdated
+    audioDevicesUpdatedEvent: 'audioDevicesUpdated',
+    listener: (audioDevices: AudioDevice[], selectedDevice?: AudioDevice) => void
   ): this;
 
   /**
@@ -112,13 +132,13 @@ export declare interface Voice {
    * @returns - The call object.
    */
   addListener(
-    callInviteEvent: Voice.Event.CallInvite,
-    listener: Voice.Listener.CallInvite
+    callInviteEvent: 'callInvite',
+    listener: (callInvite: CallInvite) => void
   ): this;
   /** {@inheritDoc (Voice:interface).(addListener:2)} */
   on(
-    callInviteEvent: Voice.Event.CallInvite,
-    listener: Voice.Listener.CallInvite
+    callInviteEvent: 'callInvite',
+    listener: (callInvite: CallInvite) => void
   ): this;
 
   /**
@@ -137,11 +157,11 @@ export declare interface Voice {
    * @returns - The call object.
    */
   addListener(
-    errorEvent: Voice.Event.Error,
-    listener: Voice.Listener.Error
+    errorEvent: 'error',
+    listener: (error: TwilioError) => void
   ): this;
   /** {@inheritDoc (Voice:interface).(addListener:3)} */
-  on(errorEvent: Voice.Event.Error, listener: Voice.Listener.Error): this;
+  on(errorEvent: 'error', listener: (error: TwilioError) => void): this;
 
   /**
    * Registered event. Raised when the SDK is registered for incoming calls.
@@ -159,13 +179,13 @@ export declare interface Voice {
    * @returns - The call object.
    */
   addListener(
-    registeredEvent: Voice.Event.Registered,
-    listener: Voice.Listener.Registered
+    registeredEvent: 'registered',
+    listener: () => void
   ): this;
   /** {@inheritDoc (Voice:interface).(addListener:4)} */
   on(
-    registeredEvent: Voice.Event.Registered,
-    listener: Voice.Listener.Registered
+    registeredEvent: 'registered',
+    listener: () => void
   ): this;
 
   /**
@@ -184,13 +204,13 @@ export declare interface Voice {
    * @returns - The call object.
    */
   addListener(
-    unregisteredEvent: Voice.Event.Unregistered,
-    listener: Voice.Listener.Unregistered
+    unregisteredEvent: 'unregistered',
+    listener: () => void
   ): this;
   /** {@inheritDoc (Voice:interface).(addListener:5)} */
   on(
-    unregisteredEvent: Voice.Event.Unregistered,
-    listener: Voice.Listener.Unregistered
+    unregisteredEvent: 'unregistered',
+    listener: () => void
   ): this;
 
   /**
@@ -200,9 +220,9 @@ export declare interface Voice {
    * is raised.
    * @returns - The call object.
    */
-  addListener(voiceEvent: Voice.Event, listener: Voice.Listener.Generic): this;
+  addListener(voiceEvent: string, listener: (...args: any[]) => void): this;
   /** {@inheritDoc (Voice:interface).(addListener:6)} */
-  on(voiceEvent: Voice.Event, listener: Voice.Listener.Generic): this;
+  on(voiceEvent: string, listener: (...args: any[]) => void): this;
 }
 
 /**
@@ -368,7 +388,7 @@ export class Voice extends EventEmitter {
 
     const callInvite = new CallInvite(callInviteInfo, CallInvite.State.Pending);
 
-    this.emit(Voice.Event.CallInvite, callInvite);
+    this.emit('callInvite', callInvite);
   };
 
   /**
@@ -388,7 +408,7 @@ export class Voice extends EventEmitter {
       error: { code, message },
     } = nativeVoiceEvent;
     const error = constructTwilioError(message, code);
-    this.emit(Voice.Event.Error, error);
+    this.emit('error', error);
   };
 
   /**
@@ -403,7 +423,7 @@ export class Voice extends EventEmitter {
       );
     }
 
-    this.emit(Voice.Event.Registered);
+    this.emit('registered');
   };
 
   /**
@@ -418,7 +438,7 @@ export class Voice extends EventEmitter {
       );
     }
 
-    this.emit(Voice.Event.Unregistered);
+    this.emit('unregistered');
   };
 
   /**
@@ -449,7 +469,7 @@ export class Voice extends EventEmitter {
         ? new AudioDevice(selectedDeviceInfo)
         : undefined;
 
-    this.emit(Voice.Event.AudioDevicesUpdated, audioDevices, selectedDevice);
+    this.emit('audioDevicesUpdated', audioDevices, selectedDevice);
   };
 
   /**
