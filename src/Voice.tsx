@@ -42,6 +42,32 @@ export type VoiceListenerType = {
   Generic: (...args: any[]) => void;
 };
 
+// Define connect options interface outside the Voice namespace
+export interface ConnectOptions {
+  /**
+   * Custom parameters to send to the TwiML Application.
+   */
+  params?: Record<string, string>;
+  /**
+   * A CallKit display name that will show in the call history as the contact
+   * handle.
+   *
+   * @remarks
+   * Unsupported platforms:
+   * - Android
+   */
+  contactHandle?: string;
+  /**
+   * The display name that will show in the Android notifications. Passing an
+   * empty string will be considered the same as if `undefined` were passed.
+   *
+   * @remarks
+   * Unsupported platforms:
+   * - iOS
+   */
+  notificationDisplayName?: string;
+}
+
 /**
  * Defines strict typings for all events emitted by {@link (Voice:class)
  * | Voice objects}.
@@ -223,6 +249,39 @@ export declare interface Voice {
   addListener(voiceEvent: string, listener: (...args: any[]) => void): this;
   /** {@inheritDoc (Voice:interface).(addListener:6)} */
   on(voiceEvent: string, listener: (...args: any[]) => void): this;
+
+  /**
+   * Create an outgoing call.
+   *
+   * @remarks
+   * Note that the resolution of the returned `Promise` does not imply any call
+   * event occurring, such as answered or rejected.
+   * The `contactHandle` parameter is only required for iOS apps. Currently the
+   * parameter does have any effect on Android apps and can be ignored.
+   * `Default Contact` will appear in the iOS call history if the value is empty
+   * or not provided.
+   *
+   * @param token - A Twilio Access Token, usually minted by an
+   * authentication-gated endpoint using a Twilio helper library.
+   * @param options - Connect options.
+   *  See {@link ConnectOptions}.
+   *
+   * @returns
+   * A `Promise` that
+   *  - Resolves with a call when the call is created.
+   *  - Rejects:
+   *    * When a call is not able to be created on the native layer.
+   *    * With an {@link TwilioErrors.InvalidArgumentError} when invalid
+   *      arguments are passed.
+   */
+  async connect(
+    token: string,
+    {
+      contactHandle = 'Default Contact',
+      notificationDisplayName = undefined,
+      params = {},
+    }: ConnectOptions = {}
+  ): Promise<Call>;
 }
 
 /**
@@ -486,7 +545,7 @@ export class Voice extends EventEmitter {
    * @param token - A Twilio Access Token, usually minted by an
    * authentication-gated endpoint using a Twilio helper library.
    * @param options - Connect options.
-   *  See {@link (Voice:namespace).ConnectOptions}.
+   *  See {@link ConnectOptions}.
    *
    * @returns
    * A `Promise` that
@@ -502,7 +561,7 @@ export class Voice extends EventEmitter {
       contactHandle = 'Default Contact',
       notificationDisplayName = undefined,
       params = {},
-    }: Voice.ConnectOptions = {}
+    }: ConnectOptions = {}
   ): Promise<Call> {
     if (typeof token !== 'string') {
       throw new InvalidArgumentError(
