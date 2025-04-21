@@ -12,39 +12,37 @@ import { Voice } from './Voice';
 
 // Handle Type Extensions for Voice
 declare module './Voice' {
+  interface EventType {
+    CallInvite: string;
+    Call: string;
+    CallDisconnected: string;
+    CallInviteCanceled: string;
+    CallConnected: string;
+  }
+
   interface Voice {
-    on(event: string, listener: (data: any) => void): void;
-    connect(token: string, params?: Record<string, string>): Promise<any>;
-    register(token: string): Promise<any>;
-    unregister(token: string): Promise<any>;
-    handleNotification(payload: any): Promise<boolean>;
-    isValidTwilioNotification(payload: any): boolean;
-    setSpeakerPhone(enabled: boolean): Promise<any>;
+    // Static properties
+    Event: EventType;
+    
+    // Static methods
+    on(event: string, listener: Function): void;
+    connect(token: string, params?: Record<string, string>): Promise<Call>;
+    register(token: string): Promise<void>;
+    unregister(token: string): Promise<void>;
+    handleNotification(payload: Record<string, any>): Promise<boolean>;
+    isValidTwilioNotification(payload: Record<string, any>): boolean;
+    setSpeakerPhone(enabled: boolean): Promise<void>;
     getDeviceToken(): Promise<string | null>;
   }
 
-  export interface VoiceStatic {
-    new(): Voice;
-    on(event: string, listener: (data: any) => void): void;
-    connect(token: string, params?: Record<string, string>): Promise<any>;
-    register(token: string): Promise<any>;
-    unregister(token: string): Promise<any>;
-    handleNotification(payload: any): Promise<boolean>;
-    isValidTwilioNotification(payload: any): boolean;
-    setSpeakerPhone(enabled: boolean): Promise<any>;
-    getDeviceToken(): Promise<string | null>;
-    Event: typeof Event & {
-      Call: string;
-      CallInvite: string;
-      CallDisconnected: string;
-      CallInviteCanceled: string;
-    };
-  }
+  // Extend the exported Voice object to include these methods
+  const Voice: Voice;
+  export { Voice };
 }
 
 // Type Extensions for CallInvite
 declare module './CallInvite' {
-  export interface CallInvite {
+  interface CallInvite {
     getSid(): string;
     getFrom(): string;
     getTo(): string;
@@ -74,7 +72,8 @@ declare module './Call' {
 // Add module augmentation for tests
 declare module 'jest' {
   interface Matchers<R> {
-    toBeCalledWith(...args: any[]): R;
+    toBeCalledWith(expected: any): R;
+    toBeCalled(): R;
   }
 }
 

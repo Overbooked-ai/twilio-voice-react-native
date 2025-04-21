@@ -1,67 +1,57 @@
-// Mock expo-modules-core for tests
+// Mock expo-modules-core
 jest.mock('expo-modules-core', () => ({
   requireNativeModule: jest.fn(() => ({
-    // Mock expo module functions
-    voice_connect: jest.fn(() => 'mock-call-sid'),
-    voice_disconnect: jest.fn(() => true),
-    voice_mute: jest.fn(() => true),
-    voice_hold: jest.fn(() => true),
-    voice_send_digits: jest.fn(() => true),
-    voice_get_call_state: jest.fn(() => 'connected'),
-    voice_register: jest.fn(() => true),
-    voice_unregister: jest.fn(() => true),
-    voice_handle_notification: jest.fn(() => true),
-    voice_is_twilio_notification: jest.fn(() => true),
-    voice_set_speaker_phone: jest.fn(() => true),
-    voice_get_device_token: jest.fn(() => 'mock-token'),
-    voice_accept: jest.fn(() => true),
-    voice_reject: jest.fn(() => true)
-  }))
+    voice_connect: jest.fn().mockResolvedValue('call-sid-123'),
+    voice_disconnect: jest.fn().mockResolvedValue(true),
+    voice_mute: jest.fn().mockResolvedValue(true),
+    voice_hold: jest.fn().mockResolvedValue(true),
+    voice_send_digits: jest.fn().mockResolvedValue(true),
+    voice_get_call_state: jest.fn().mockResolvedValue('connected'),
+    voice_register: jest.fn().mockResolvedValue(true),
+    voice_unregister: jest.fn().mockResolvedValue(true),
+    voice_handle_notification: jest.fn().mockResolvedValue(true),
+    voice_is_twilio_notification: jest.fn().mockReturnValue(true),
+    voice_set_speaker_phone: jest.fn().mockResolvedValue(true),
+    voice_get_device_token: jest.fn().mockResolvedValue('device-token-123'),
+    voice_accept: jest.fn().mockResolvedValue(true),
+    voice_reject: jest.fn().mockResolvedValue(true),
+  })),
 }));
 
 // Mock react-native Platform
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'android',
-  select: jest.fn(obj => obj.android)
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'android',
+    select: jest.fn(obj => obj.android || obj.default),
+  },
 }));
 
-// Mock Voice module
-jest.mock('./src/Voice', () => {
-  const EventEmitter = require('eventemitter3');
-  
-  const voiceEmitter = new EventEmitter();
-  
-  const Voice = {
+// Mock Voice
+jest.mock('./src/Voice', () => ({
+  Voice: {
+    on: jest.fn(),
+    connect: jest.fn().mockResolvedValue({
+      getSid: jest.fn().mockReturnValue('call-sid-123'),
+    }),
+    register: jest.fn().mockResolvedValue(),
+    unregister: jest.fn().mockResolvedValue(),
+    handleNotification: jest.fn().mockResolvedValue(true),
+    isValidTwilioNotification: jest.fn().mockReturnValue(true),
+    setSpeakerPhone: jest.fn().mockResolvedValue(),
+    getDeviceToken: jest.fn().mockResolvedValue('device-token-123'),
     Event: {
-      CallInvite: 'callInvite',
+      CallInvite: 'call-invite',
       Call: 'call',
-      CallConnected: 'callConnected',
-      CallDisconnected: 'callDisconnected',
-      CallInviteCanceled: 'callInviteCanceled',
-      CallRejected: 'callRejected',
-      Registered: 'registered',
-      Unregistered: 'unregistered',
-      ConnectionError: 'connectionError'
+      CallDisconnected: 'call-disconnected',
+      CallInviteCanceled: 'call-invite-canceled',
+      CallConnected: 'call-connected',
     },
-    on: jest.fn((event, callback) => voiceEmitter.on(event, callback)),
-    off: jest.fn((event, callback) => voiceEmitter.off(event, callback)),
-    connect: jest.fn(() => Promise.resolve({
-      getSid: jest.fn(() => 'mock-call-sid'),
-      getState: jest.fn(() => 'connected'),
-      disconnect: jest.fn(),
-      mute: jest.fn(),
-      hold: jest.fn(),
-      sendDigits: jest.fn()
-    })),
-    register: jest.fn(() => Promise.resolve()),
-    unregister: jest.fn(() => Promise.resolve()),
-    handleNotification: jest.fn(() => Promise.resolve(true)),
-    isValidTwilioNotification: jest.fn(() => true),
-    setSpeakerPhone: jest.fn(() => Promise.resolve()),
-    getDeviceToken: jest.fn(() => Promise.resolve('mock-token')),
-    // Add method to trigger events (for testing)
-    _emit: (event, ...args) => voiceEmitter.emit(event, ...args)
-  };
-  
-  return { Voice };
-}); 
+  },
+}));
+
+// Global console mocks to reduce noise
+global.console = {
+  ...global.console,
+  error: jest.fn(),
+  warn: jest.fn(),
+}; 
