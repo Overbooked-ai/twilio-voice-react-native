@@ -276,11 +276,7 @@ export declare interface Voice {
    */
   connect(
     token: string,
-    {
-      contactHandle = 'Default Contact',
-      notificationDisplayName = undefined,
-      params = {},
-    }: ConnectOptions = {}
+    options: ConnectOptions = {}
   ): Promise<Call>;
 }
 
@@ -557,12 +553,14 @@ export class Voice extends EventEmitter {
    */
   async connect(
     token: string,
-    {
+    options: ConnectOptions = {}
+  ): Promise<Call> {
+    const {
       contactHandle = 'Default Contact',
       notificationDisplayName = undefined,
       params = {},
-    }: ConnectOptions = {}
-  ): Promise<Call> {
+    } = options;
+
     if (typeof token !== 'string') {
       throw new InvalidArgumentError(
         'Argument "token" must be of type "string".'
