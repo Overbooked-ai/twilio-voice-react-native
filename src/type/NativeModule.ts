@@ -61,17 +61,17 @@ export interface TwilioVoiceReactNative extends NativeModulesStatic {
    */
   voice_connect_android(
     token: string,
-    twimlParams: Record<string, any>,
+    twimlParams: Record<string, unknown>,
     notificationDisplayName: string | undefined
   ): Promise<NativeCallInfo>;
   voice_connect_ios(
     token: string,
-    twimlParams: Record<string, any>,
+    twimlParams: Record<string, unknown>,
     contactHandle: string
   ): Promise<NativeCallInfo>;
   voice_initializePushRegistry(): Promise<void>;
   voice_setCallKitConfiguration(
-    configuration: Record<string, any>
+    configuration: Record<string, unknown>
   ): Promise<void>;
   voice_setIncomingCallContactHandleTemplate(template?: string): Promise<void>;
   voice_getAudioDevices(): Promise<NativeAudioDevicesInfo>;

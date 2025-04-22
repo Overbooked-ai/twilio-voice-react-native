@@ -9,13 +9,7 @@ import { EventEmitter } from 'eventemitter3';
 import type { RTCStats } from './';
 import { NativeModule, NativeEventEmitter } from './common';
 import { Constants } from './constants';
-import type {
-  NativeCallEvent,
-  NativeCallEventType,
-  NativeCallInfo,
-  NativeCallFeedbackIssue,
-  NativeCallFeedbackScore,
-} from './type/Call';
+import type { NativeCallEvent, NativeCallEventType } from './type/Call';
 import type { CustomParameters, Uuid } from './type/common';
 import type { TwilioError } from './error/TwilioError';
 import { InvalidArgumentError } from './error/InvalidArgumentError';
@@ -23,6 +17,11 @@ import { constructTwilioError } from './error/utility';
 import { CallMessage, validateCallMessage } from './CallMessage/CallMessage';
 import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
+import {
+  NativeCallFeedbackIssue,
+  NativeCallFeedbackScore,
+  NativeCallInfo,
+} from '../lib/type/Call';
 
 /**
  * Defines strict typings for all events emitted by {@link (Call:class)
@@ -1327,23 +1326,11 @@ const validScores = [
  * @internal
  */
 const scoreMap: Record<Call.Score, NativeCallFeedbackScore> = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Score.One]: Constants.CallFeedbackScoreOne,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Score.Two]: Constants.CallFeedbackScoreTwo,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Score.Three]: Constants.CallFeedbackScoreThree,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Score.Four]: Constants.CallFeedbackScoreFour,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Score.Five]: Constants.CallFeedbackScoreFive,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Score.NotReported]: Constants.CallFeedbackScoreNotReported,
 };
 
@@ -1354,25 +1341,11 @@ const scoreMap: Record<Call.Score, NativeCallFeedbackScore> = {
  * @internal
  */
 const issueMap: Record<Call.Issue, NativeCallFeedbackIssue> = {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.AudioLatency]: Constants.CallFeedbackIssueAudioLatency,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.ChoppyAudio]: Constants.CallFeedbackIssueChoppyAudio,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.DroppedCall]: Constants.CallFeedbackIssueDroppedCall,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.Echo]: Constants.CallFeedbackIssueEcho,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.NoisyCall]: Constants.CallFeedbackIssueNoisyCall,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.NotReported]: Constants.CallFeedbackIssueNotReported,
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-expect-error
   [Call.Issue.OneWayAudio]: Constants.CallFeedbackIssueOneWayAudio,
 };
