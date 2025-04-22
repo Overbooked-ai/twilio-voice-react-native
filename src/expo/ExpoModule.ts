@@ -10,8 +10,8 @@ import type {
   NativeCallFeedbackScore,
   NativeCallFeedbackIssue,
   RTCStats,
-  NativeCallMessageInfo,
-  NativeCallState,
+  // NativeCallMessageInfo,
+  // NativeCallState,
 } from '../type/common';
 
 // Original Interface (Matches updated src/type/NativeModule.ts)
@@ -392,7 +392,7 @@ export default NativeModuleWrapper;
 
 // // Re-export the types for backward compatibility
 // export {
-//   // Uuid,
+//   Uuid,
 //   NativeCallInfo,
 //   NativeCallInviteInfo,
 //   NativeAudioDevicesInfo,
