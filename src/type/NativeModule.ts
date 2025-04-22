@@ -2,13 +2,9 @@ import type { NativeModulesStatic } from 'react-native';
 import type { CallInvite } from '../CallInvite';
 import type { NativeAudioDevicesInfo } from './AudioDevice';
 import type { NativeCallInviteInfo } from './CallInvite';
-import type { Uuid } from './common';
+import { NativeCallFeedbackIssue, NativeCallFeedbackScore, NativeCallInfo, Uuid } from './common';
 import type { RTCStats } from './RTCStats';
-import {
-  NativeCallFeedbackIssue,
-  NativeCallFeedbackScore,
-  NativeCallInfo,
-} from '../../lib/type/Call';
+
 
 export interface TwilioVoiceReactNative extends NativeModulesStatic {
   /**

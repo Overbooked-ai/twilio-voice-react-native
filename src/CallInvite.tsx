@@ -399,8 +399,6 @@ export class CallInvite extends EventEmitter {
       // @ts-expect-error
       state: Call.State.Connecting,
     };
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
     const call = new Call(callInfo);
 
     this.emit(CallInvite.Event.Accepted, call);
