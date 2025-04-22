@@ -92,8 +92,9 @@ export interface NativeCallInviteInfo {
 }
 
 // RTC Stats types
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export declare namespace RTCStats {
-  export type StatsReport = Record<string, any>;
+  export type StatsReport = Record<string, unknown>;
 }
 
 // Call Message types

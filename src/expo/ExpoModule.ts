@@ -392,7 +392,7 @@ export default NativeModuleWrapper;
 
 // Re-export the types for backward compatibility
 export {
-  Uuid,
+  // Uuid,
   NativeCallInfo,
   NativeCallInviteInfo,
   NativeAudioDevicesInfo,

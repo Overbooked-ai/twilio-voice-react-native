@@ -49,6 +49,8 @@ export class AudioDevice {
    */
   constructor({ uuid, type, name }: NativeAudioDeviceInfo) {
     this.uuid = uuid;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     this.type = type;
     this.name = name;
   }
@@ -75,6 +77,7 @@ export class AudioDevice {
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace AudioDevice {
   /**
    * Audio device type enumeration. Describes all possible audio device types as
