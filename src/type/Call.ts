@@ -77,11 +77,11 @@ export type NativeCallEventType =
   | Constants.CallEventRinging
   | Constants.CallEventMessageReceived;
 
-// Re-export the types for backward compatibility
-export {
-  NativeCallInfo,
-  NativeCallState,
-  NativeCallFeedbackIssue,
-  NativeCallFeedbackScore,
-  NativeCallQualityWarning,
-};
+// // Re-export the types for backward compatibility
+// export {
+//   NativeCallInfo,
+//   NativeCallState,
+//   NativeCallFeedbackIssue,
+//   NativeCallFeedbackScore,
+//   NativeCallQualityWarning,
+// };
