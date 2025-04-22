@@ -32,6 +32,10 @@ private const val CALL_EVENT_CONNECT_FAILURE = "callConnectFailure"
 private const val CALL_EVENT_CONNECTED = "callConnected"
 private const val CALL_EVENT_DISCONNECTED = "callDisconnected"
 private const val CALL_EVENT_RINGING = "callRinging"
+private const val CALL_EVENT_RECONNECTING = "callReconnecting"
+private const val CALL_EVENT_RECONNECTED = "callReconnected"
+private const val CALL_EVENT_QUALITY_WARNINGS_CHANGED = "callQualityWarningsChanged"
+private const val CALL_EVENT_MESSAGE_RECEIVED = "callMessageReceived"
 // TODO: Add other Call event constants (Reconnecting, Reconnected, QualityWarningsChanged)
 // TODO: Add CallInvite event constants
 
@@ -63,7 +67,11 @@ class ExpoModule : Module() {
       CALL_EVENT_CONNECT_FAILURE,
       CALL_EVENT_CONNECTED,
       CALL_EVENT_DISCONNECTED,
-      CALL_EVENT_RINGING
+      CALL_EVENT_RINGING,
+      CALL_EVENT_RECONNECTING,
+      CALL_EVENT_RECONNECTED,
+      CALL_EVENT_QUALITY_WARNINGS_CHANGED,
+      CALL_EVENT_MESSAGE_RECEIVED
       // TODO: Add other events
     )
 
@@ -122,12 +130,11 @@ class ExpoModule : Module() {
                 connectOptionsBuilder.params(twimlParams)
                 connectOptionsBuilder.enableDscp(true)
 
-                // TODO: Implement ExpoCallMessageListenerProxy
-                // connectOptionsBuilder.callMessageListener(ExpoCallMessageListenerProxy(this))
-
                 val uuid = UUID.randomUUID()
-                // Use placeholder Expo proxy
                 val callListenerProxy = ExpoCallListenerProxy(uuid, context, this@ExpoModule)
+                val messageListenerProxy = ExpoCallMessageListenerProxy(uuid, context, this@ExpoModule)
+                connectOptionsBuilder.callMessageListener(messageListenerProxy)
+                
                 val connectOptions = connectOptionsBuilder.build()
 
                 val voiceServiceApi = voiceApplicationProxy?.voiceServiceApi ?: run {
@@ -220,22 +227,15 @@ class ExpoModule : Module() {
                 val uuid = UUID.fromString(callInviteUuid)
                 val callRecord = validateCallInviteRecord(uuid, promise) ?: return@post
                 
-                // Store promise for potential resolution in CallListenerProxy.onConnected?
-                // callRecord.setCallAcceptedPromise(promise) // How to handle promise resolution across modules/listeners?
-                // For now, resolve immediately after calling accept, assuming it initiates connection.
-                // The actual call state updates will come via events.
-
                 val voiceServiceApi = voiceApplicationProxy?.voiceServiceApi ?: run {
                     promise.reject(CodedException("E_VOICE_INIT", "Voice service not available for accept", null))
                     return@post
                 }
 
-                // Need to create CallListenerProxy for the upcoming call
                 val callListenerProxy = ExpoCallListenerProxy(uuid, context, this@ExpoModule)
-                voiceServiceApi.acceptCall(callRecord, callListenerProxy)
+                val messageListenerProxy = ExpoCallMessageListenerProxy(uuid, context, this@ExpoModule)
+                voiceServiceApi.acceptCall(callRecord, callListenerProxy, messageListenerProxy)
                 
-                // Assuming accept initiates the call, return the current (pending) state.
-                // JS layer should rely on events for state changes (connected, disconnected).
                 promise.resolve(ReactNativeArgumentsSerializerExpo.serializeCallExpo(callRecord))
 
             } catch (e: IllegalArgumentException) {
@@ -255,8 +255,6 @@ class ExpoModule : Module() {
                 val uuid = UUID.fromString(callInviteUuid)
                 val callRecord = validateCallInviteRecord(uuid, promise) ?: return@post
 
-                // callRecord.setCallRejectedPromise(promise) // Similar promise handling issue as accept.
-                
                 val voiceServiceApi = voiceApplicationProxy?.voiceServiceApi ?: run {
                     promise.reject(CodedException("E_VOICE_INIT", "Voice service not available for reject", null))
                     return@post
@@ -327,10 +325,212 @@ class ExpoModule : Module() {
         }
     }
 
-    // TODO: Implement other methods:
-    // register, unregister, getDeviceToken, getCalls, getCallInvites, 
-    // accept, reject, disconnect, hold, mute, sendDigits, postFeedback, getStats,
-    // audio device management, etc.
+    // --- Call Methods ---
+
+    AsyncFunction("call_hold") { callUuid: String, hold: Boolean, promise: Promise ->
+      logger.debug("call_hold called (Expo) for $callUuid to $hold")
+      mainHandler.post {
+        try {
+            val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+            callRecord.voiceCall?.hold(hold)
+            promise.resolve(callRecord.voiceCall?.isOnHold ?: false) // Return current state
+        } catch (e: Exception) {
+            promise.reject(UnexpectedException(e))
+        }
+      }
+    }
+
+    AsyncFunction("call_isOnHold") { callUuid: String, promise: Promise ->
+       logger.debug("call_isOnHold called (Expo) for $callUuid")
+       mainHandler.post {
+           try {
+               val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+               promise.resolve(callRecord.voiceCall?.isOnHold ?: false)
+           } catch (e: Exception) {
+               promise.reject(UnexpectedException(e))
+           }
+       }
+    }
+
+    AsyncFunction("call_mute") { callUuid: String, mute: Boolean, promise: Promise ->
+      logger.debug("call_mute called (Expo) for $callUuid to $mute")
+      mainHandler.post {
+        try {
+            val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+            callRecord.voiceCall?.mute(mute)
+            promise.resolve(callRecord.voiceCall?.isMuted ?: false) // Return current state
+        } catch (e: Exception) {
+            promise.reject(UnexpectedException(e))
+        }
+      }
+    }
+
+    AsyncFunction("call_isMuted") { callUuid: String, promise: Promise ->
+       logger.debug("call_isMuted called (Expo) for $callUuid")
+       mainHandler.post {
+            try {
+                val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+                promise.resolve(callRecord.voiceCall?.isMuted ?: false)
+            } catch (e: Exception) {
+                promise.reject(UnexpectedException(e))
+            }
+       }
+    }
+
+    AsyncFunction("call_sendDigits") { callUuid: String, digits: String, promise: Promise ->
+        logger.debug("call_sendDigits called (Expo) for $callUuid")
+        mainHandler.post {
+            try {
+                val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+                callRecord.voiceCall?.sendDigits(digits)
+                promise.resolve(null) // Resolves void
+            } catch (e: Exception) {
+                promise.reject(UnexpectedException(e))
+            }
+        }
+    }
+
+    // --- Audio Methods ---
+    AsyncFunction("voice_getAudioDevices") { promise: Promise ->
+        logger.debug("voice_getAudioDevices called (Expo)")
+        val audioSwitch = audioSwitchManager?.audioSwitch ?: run {
+            promise.reject(CodedException("E_AUDIO_SWITCH", "AudioSwitch not available", null))
+            return@AsyncFunction
+        }
+        
+        // AudioSwitch provides available devices and selected device directly
+        val availableDevices = audioSwitch.availableAudioDevices
+        val selectedDevice = audioSwitch.selectedAudioDevice
+        
+        // Convert to the Map structure expected by the serializer
+        // Assuming the original module used a Map<String, AudioDevice> structure, we replicate it.
+        // Using hashCode as UUID might be unstable, consider generating/mapping UUIDs if needed.
+        val deviceMap = availableDevices.associateBy { it.hashCode().toString() }
+        val selectedDeviceUuid = selectedDevice?.hashCode()?.toString()
+
+        val serializedInfo = ReactNativeArgumentsSerializerExpo.serializeAudioDeviceInfoExpo(
+            deviceMap,
+            selectedDeviceUuid,
+            selectedDevice
+        )
+        promise.resolve(serializedInfo)
+    }
+
+    AsyncFunction("voice_selectAudioDevice") { uuid: String, promise: Promise ->
+        logger.debug("voice_selectAudioDevice called (Expo) for $uuid")
+        val audioSwitch = audioSwitchManager?.audioSwitch ?: run {
+            promise.reject(CodedException("E_AUDIO_SWITCH", "AudioSwitch not available", null))
+            return@AsyncFunction
+        }
+        
+        // Find the device by the provided UUID (which we mapped from hashCode)
+        val deviceToSelect = audioSwitch.availableAudioDevices.find { 
+            it.hashCode().toString() == uuid 
+        }
+
+        if (deviceToSelect != null) {
+            audioSwitch.selectDevice(deviceToSelect)
+            promise.resolve(null)
+        } else {
+            promise.reject(CodedException("E_AUDIO_DEVICE_NOT_FOUND", "Audio device with UUID $uuid not found", null))
+        }
+    }
+
+    // --- Getters for Active Calls/Invites ---
+    AsyncFunction("voice_getCalls") { promise: Promise ->
+      logger.debug("voice_getCalls called (Expo)")
+      mainHandler.post {
+          try {
+              val callRecords = CallRecordDatabase.getInstance(context).collection
+              val activeCalls = callRecords.filter { it.voiceCall != null && it.voiceCall!!.state != Call.State.DISCONNECTED }
+                                         .map { ReactNativeArgumentsSerializerExpo.serializeCallExpo(it) }
+              promise.resolve(activeCalls)
+          } catch (e: Exception) {
+              promise.reject(UnexpectedException(e))
+          }
+      }
+    }
+
+    AsyncFunction("voice_getCallInvites") { promise: Promise ->
+      logger.debug("voice_getCallInvites called (Expo)")
+       mainHandler.post {
+           try {
+               val callRecords = CallRecordDatabase.getInstance(context).collection
+               val activeInvites = callRecords.filter { it.callInvite != null && it.callInviteState == CallRecordDatabase.CallRecord.CallInviteState.ACTIVE }
+                                            .map { ReactNativeArgumentsSerializerExpo.serializeCallInviteExpo(it) }
+               promise.resolve(activeInvites)
+           } catch (e: Exception) {
+                promise.reject(UnexpectedException(e))
+           }
+       }
+    }
+
+    // --- Feedback, Stats, Messaging ---
+    AsyncFunction("call_postFeedback") { callUuid: String, score: String, issue: String, promise: Promise ->
+        logger.debug("call_postFeedback called (Expo) for $callUuid")
+        mainHandler.post {
+            try {
+                val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+                val parsedScore = ReactNativeArgumentsSerializerExpo.getScoreFromString(score)
+                val parsedIssue = ReactNativeArgumentsSerializerExpo.getIssueFromString(issue)
+                callRecord.voiceCall?.postFeedback(parsedScore, parsedIssue)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                 promise.reject(UnexpectedException(e))
+            }
+        }
+    }
+
+    AsyncFunction("call_getStats") { callUuid: String, promise: Promise ->
+        logger.debug("call_getStats called (Expo) for $callUuid")
+        mainHandler.post {
+            try {
+                val callRecord = validateCallRecord(UUID.fromString(callUuid), promise) ?: return@post
+                // Use the new ExpoStatsListenerProxy to resolve the promise
+                callRecord.voiceCall?.getStats(ExpoStatsListenerProxy(UUID.fromString(callUuid), this@ExpoModule, promise))
+                // Promise is resolved by the listener
+            } catch (e: Exception) {
+                 promise.reject(UnexpectedException(e))
+            }
+        }
+    }
+
+    AsyncFunction("call_sendMessage") { callUuid: String, content: String, contentType: String, messageType: String, promise: Promise ->
+        logger.debug("call_sendMessage called (Expo) for $callUuid")
+        mainHandler.post {
+            try {
+                 // Note: Unlike original, this doesn't strictly validate call vs invite first.
+                 // It relies on the underlying SDK returning true/false from sendMessage.
+                 // Need to ensure validateCallRecordOrInvite helper exists or implement check here.
+                val uuid = UUID.fromString(callUuid)
+                val callRecord = CallRecordDatabase.getInstance(context).get(uuid) ?: run {
+                    promise.reject(CodedException("E_RECORD_NOT_FOUND", "No call or invite found for UUID $uuid", null))
+                    return@post
+                }
+
+                val callMessage = CallMessage.Builder(messageType)
+                    .contentType(contentType)
+                    .content(content)
+                    .build()
+
+                val sent: Boolean = if (callRecord.callInvite != null && callRecord.callInviteState == CallRecordDatabase.CallRecord.CallInviteState.ACTIVE) {
+                    callRecord.callInvite!!.sendMessage(callMessage)
+                } else if (callRecord.voiceCall != null) {
+                    callRecord.voiceCall!!.sendMessage(callMessage)
+                } else {
+                    false // Neither active call nor invite found
+                }
+                
+                // Original module resolved with the boolean status. Let's keep that.
+                promise.resolve(sent)
+
+            } catch (e: IllegalArgumentException) {
+                promise.reject(CodedException("E_INVALID_UUID", "Invalid Call UUID format", e))
+            } catch (e: Exception) {
+                promise.reject(UnexpectedException(e))
+            }
+        }
+    }
 
     // Cleanup
     OnDestroy { 

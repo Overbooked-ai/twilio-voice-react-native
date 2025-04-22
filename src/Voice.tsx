@@ -619,23 +619,27 @@ export class Voice extends EventEmitter {
   /**
    * Register this device for incoming calls.
    * @param token - A Twilio Access Token.
+   * @param fcmToken - (Android Only) The FCM token obtained via a library like expo-notifications.
+   *                   Required on Android, ignored on iOS.
    * @returns
    * A `Promise` that
    *  - Resolves when the device has been registered.
    */
-  register(token: string): Promise<void> {
-    return NativeModule.voice_register(token);
+  register(token: string, fcmToken?: string): Promise<void> {
+    return NativeModule.voice_register(token, fcmToken);
   }
 
   /**
    * Unregister this device for incoming calls.
    * @param token - A Twilio Access Token.
+   * @param fcmToken - (Android Only) The FCM token obtained via a library like expo-notifications.
+   *                   Required on Android, ignored on iOS.
    * @returns
    * A `Promise` that
    *  - Resolves when the device has been unregistered.
    */
-  unregister(token: string): Promise<void> {
-    return NativeModule.voice_unregister(token);
+  unregister(token: string, fcmToken?: string): Promise<void> {
+    return NativeModule.voice_unregister(token, fcmToken);
   }
 
   /**
