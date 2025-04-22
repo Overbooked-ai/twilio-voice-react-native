@@ -8,9 +8,9 @@
 import { EventEmitter } from 'eventemitter3';
 import { Call } from './Call';
 import { NativeEventEmitter, NativeModule, Platform } from './common';
-import { InvalidStateError } from './error/InvalidStateError';
-import { TwilioError } from './error/TwilioError';
-import { UnsupportedPlatformError } from './error/UnsupportedPlatformError';
+import { InvalidStateError } from './error';
+import { TwilioError } from './error';
+import { UnsupportedPlatformError } from './error';
 import { constructTwilioError } from './error/utility';
 import type {
   NativeCallInviteInfo,
@@ -18,8 +18,8 @@ import type {
   NativeCallInviteAcceptedEvent,
   NativeCallInviteCancelledEvent,
   NativeCallInviteMessageReceivedEvent,
-} from './type/CallInvite';
-import type { CustomParameters, Uuid } from './type/common';
+} from './type';
+import type { CustomParameters, Uuid } from './type';
 import { CallMessage, validateCallMessage } from './CallMessage/CallMessage';
 import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';

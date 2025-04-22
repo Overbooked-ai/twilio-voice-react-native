@@ -9,19 +9,14 @@ import { EventEmitter } from 'eventemitter3';
 import type { RTCStats } from './';
 import { NativeModule, NativeEventEmitter } from './common';
 import { Constants } from './constants';
-import type { NativeCallEvent, NativeCallEventType } from './type/Call';
-import type { CustomParameters, Uuid } from './type/common';
-import type { TwilioError } from './error/TwilioError';
-import { InvalidArgumentError } from './error/InvalidArgumentError';
+import type { NativeCallEvent, NativeCallEventType } from './type';
+import type { CustomParameters, Uuid } from './type';
+import type { TwilioError } from './error';
+import { InvalidArgumentError } from './error';
 import { constructTwilioError } from './error/utility';
 import { CallMessage, validateCallMessage } from './CallMessage/CallMessage';
 import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
-import {
-  NativeCallFeedbackIssue,
-  NativeCallFeedbackScore,
-  NativeCallInfo,
-} from '../lib/type/Call';
 
 /**
  * Defines strict typings for all events emitted by {@link (Call:class)
