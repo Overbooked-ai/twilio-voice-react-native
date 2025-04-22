@@ -40,7 +40,7 @@ export interface TwilioVoiceReactNative extends NativeModulesStatic {
     content: string,
     contentType: string,
     messageType: string
-  ): Promise<string>;
+  ): Promise<boolean>;
 
   /**
    * Call Invite bindings.

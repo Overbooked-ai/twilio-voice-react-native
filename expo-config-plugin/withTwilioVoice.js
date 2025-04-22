@@ -23,4 +23,4 @@ const withTwilioVoice = (config, props = {}) => {
   return config;
 };
 
-module.exports = createRunOncePlugin(withTwilioVoice, pkg.name, pkg.version); 
+module.exports = createRunOncePlugin(withTwilioVoice, pkg.name, pkg.version);

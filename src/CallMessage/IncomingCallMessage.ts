@@ -61,7 +61,9 @@ export class IncomingCallMessage extends EventEmitter {
     this._content = content;
     this._contentType = contentType;
     this._messageType = messageType;
-    this._voiceEventSid = callMessageInfo.voiceEventSid;
+    this._voiceEventSid = typeof callMessageInfo.voiceEventSid === 'string' 
+      ? callMessageInfo.voiceEventSid 
+      : undefined;
   }
 
   /**

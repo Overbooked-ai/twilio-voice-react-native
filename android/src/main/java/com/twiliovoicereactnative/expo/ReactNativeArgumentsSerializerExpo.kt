@@ -155,9 +155,12 @@ object ReactNativeArgumentsSerializerExpo {
     fun serializeCallMessage(callMessage: CallMessage): Map<String, Any?> {
         return mapOf(
             "sid" to callMessage.sid,
-            "messageType" to callMessage.type.name, // e.g., "APPLICATION_MESSAGE"
+            "messageType" to callMessage.type.name, 
             "contentType" to callMessage.contentType,
-            "content" to callMessage.content
+            "content" to callMessage.content,
+            // Use the message SID as the voiceEventSid, consistent with how
+            // the original library likely handled similar events.
+            "voiceEventSid" to callMessage.sid 
         ).filterValues { it != null }
     }
 

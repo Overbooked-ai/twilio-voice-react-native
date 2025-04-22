@@ -24,6 +24,8 @@ import { CallMessage, validateCallMessage } from './CallMessage/CallMessage';
 import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
 import { Constants } from './constants';
+import type { NativeCallInfo } from './type/Call';
+import { NativeCall } from './expo/ExpoModule';
 
 /**
  * Defines strict typings for all events emitted by {@link (CallInvite:class)
@@ -386,14 +388,16 @@ export class CallInvite extends EventEmitter {
   }: NativeCallInviteAcceptedEvent) => {
     this._state = CallInvite.State.Accepted;
 
-    const callInfo = {
-      uuid: callInvite.uuid,
-      customParameters: callInvite.customParameters,
-      sid: callInvite.callSid,
-      from: callInvite.from,
-      to: callInvite.to,
+    const callInfo: NativeCallInfo = {
+      uuid: this._uuid,
+      customParameters: this._customParameters,
+      sid: this._callSid,
+      from: this._from,
+      to: this._to,
+      isMuted: false,
+      isOnHold: false,
+      state: NativeCall.State.Connecting
     };
-
     const call = new Call(callInfo);
 
     this.emit(CallInvite.Event.Accepted, call);

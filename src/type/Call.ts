@@ -1,19 +1,23 @@
 import type { Constants } from '../constants';
-import type { CustomParameters, Uuid } from './common';
 import type { NativeErrorInfo } from './Error';
-import type { Call } from '../Call';
 import type { NativeCallMessageInfo } from './CallMessage';
+import { NativeCall, NativeCallQualityWarning } from '../expo/ExpoModule';
 
 export interface NativeCallInfo {
-  uuid: Uuid;
-  customParameters?: CustomParameters;
-  from?: string;
-  [Constants.CallInfoInitialConnectedTimestamp]?: number;
-  isMuted?: boolean;
-  isOnHold?: boolean;
-  sid?: string;
-  state?: Call.State;
-  to?: string;
+  uuid: string;
+  customParameters: { [key: string]: string };
+  from: string;
+  isMuted: boolean;
+  isOnHold: boolean;
+  state: NativeCall.State;
+  to: string;
+  sid: string;
+  initialConnectedTimestamp?: number;
+  fromDisplayName?: string;
+  toDisplayName?: string;
+  callQualityWarnings?: NativeCallQualityWarning[];
+  callFeedbackIssues?: NativeCallFeedbackIssue[];
+  callFeedbackScore?: NativeCallFeedbackScore;
 }
 
 export interface NativeCallConnectedEvent {

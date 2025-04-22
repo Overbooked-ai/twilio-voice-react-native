@@ -310,7 +310,7 @@ export class Voice extends EventEmitter {
       throw constructTwilioError(connectResult.message, connectResult.code);
     }
 
-    return new Call(connectResult.callInfo);
+    return new Call(connectResult.callInfo as NativeCallInfo);
   }
 
   /**
@@ -328,7 +328,7 @@ export class Voice extends EventEmitter {
       params,
       parsedContactHandle
     );
-    return new Call(callInfo);
+    return new Call(callInfo as NativeCallInfo);
   }
 
   /**
@@ -551,15 +551,14 @@ export class Voice extends EventEmitter {
    * A `Promise` that
    *  - Resolves with a mapping of `Uuid`s to {@link (Call:class)}s.
    */
-  async getCalls(): Promise<ReadonlyMap<Uuid, Call>> {
+  async getCalls(): Promise<Map<Uuid, Call>> {
     const callInfos = await NativeModule.voice_getCalls();
-    const callsMap = new Map<Uuid, Call>(
-      callInfos.map((callInfo: NativeCallInfo) => [
-        callInfo.uuid,
-        new Call(callInfo),
-      ])
+    return new Map(
+      callInfos.map((callInfo) => {
+        const call = new Call(callInfo as NativeCallInfo);
+        return [callInfo.uuid, call] as [Uuid, Call];
+      })
     );
-    return callsMap;
   }
 
   /**

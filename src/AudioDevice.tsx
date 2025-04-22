@@ -84,6 +84,6 @@ export namespace AudioDevice {
     Earpiece = 'earpiece',
     Speaker = 'speaker',
     Bluetooth = 'bluetooth',
-    WiredHeadset = 'wired_headset'
+    WiredHeadset = 'wired_headset',
   }
 }

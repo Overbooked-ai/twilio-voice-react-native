@@ -3,4 +3,4 @@
 // use the Expo-compatible native module on Android thanks to the changes
 // in src/common.ts.
 
-export * from '../index'; 
+export * from '../index';

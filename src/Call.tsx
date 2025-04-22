@@ -439,7 +439,9 @@ export class Call extends EventEmitter {
     this._customParameters = { ...customParameters };
     this._from = from;
     this._sid = sid;
-    this._state = typeof state === 'string' ? state : Call.State.Connecting;
+    this._state = typeof state === 'string' 
+      ? (state as unknown as Call.State) 
+      : Call.State.Connecting;
     this._to = to;
     this._isMuted = isMuted;
     this._isOnHold = isOnHold;
@@ -776,7 +778,7 @@ export class Call extends EventEmitter {
    *      call.
    */
   getStats(): Promise<RTCStats.StatsReport> {
-    return NativeModule.call_getStats(this._uuid);
+    return NativeModule.call_getStats(this._uuid) as Promise<RTCStats.StatsReport>;
   }
 
   /**

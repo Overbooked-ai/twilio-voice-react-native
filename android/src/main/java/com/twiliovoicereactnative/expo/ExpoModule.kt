@@ -499,9 +499,6 @@ class ExpoModule : Module() {
         logger.debug("call_sendMessage called (Expo) for $callUuid")
         mainHandler.post {
             try {
-                 // Note: Unlike original, this doesn't strictly validate call vs invite first.
-                 // It relies on the underlying SDK returning true/false from sendMessage.
-                 // Need to ensure validateCallRecordOrInvite helper exists or implement check here.
                 val uuid = UUID.fromString(callUuid)
                 val callRecord = CallRecordDatabase.getInstance(context).get(uuid) ?: run {
                     promise.reject(CodedException("E_RECORD_NOT_FOUND", "No call or invite found for UUID $uuid", null))
@@ -513,16 +510,25 @@ class ExpoModule : Module() {
                     .content(content)
                     .build()
 
-                val sent: Boolean = if (callRecord.callInvite != null && callRecord.callInviteState == CallRecordDatabase.CallRecord.CallInviteState.ACTIVE) {
-                    callRecord.callInvite!!.sendMessage(callMessage)
+                val sent: Boolean
+                var messageSid: String? = null
+
+                if (callRecord.callInvite != null && callRecord.callInviteState == CallRecordDatabase.CallRecord.CallInviteState.ACTIVE) {
+                    sent = callRecord.callInvite!!.sendMessage(callMessage)
+                    if (sent) messageSid = callMessage.sid // Get SID on success
                 } else if (callRecord.voiceCall != null) {
-                    callRecord.voiceCall!!.sendMessage(callMessage)
+                    sent = callRecord.voiceCall!!.sendMessage(callMessage)
+                     if (sent) messageSid = callMessage.sid // Get SID on success
                 } else {
-                    false // Neither active call nor invite found
+                    sent = false
                 }
                 
-                // Original module resolved with the boolean status. Let's keep that.
-                promise.resolve(sent)
+                if (sent && messageSid != null) {
+                    promise.resolve(messageSid) // Resolve with the message SID string
+                } else {
+                    // Reject if sending failed or no active call/invite
+                    promise.reject(CodedException("E_SEND_MESSAGE_FAILED", "Failed to send message or no active call/invite", null))
+                }
 
             } catch (e: IllegalArgumentException) {
                 promise.reject(CodedException("E_INVALID_UUID", "Invalid Call UUID format", e))
