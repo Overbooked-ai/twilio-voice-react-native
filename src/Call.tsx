@@ -17,6 +17,11 @@ import { constructTwilioError } from './error/utility';
 import { CallMessage, validateCallMessage } from './CallMessage/CallMessage';
 import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
+import {
+  NativeCallFeedbackIssue,
+  NativeCallFeedbackScore,
+  NativeCallInfo,
+} from './type';
 
 /**
  * Defines strict typings for all events emitted by {@link (Call:class)
