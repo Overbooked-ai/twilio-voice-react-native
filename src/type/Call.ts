@@ -3,10 +3,6 @@ import type { NativeErrorInfo } from './Error';
 import type { NativeCallMessageInfo } from './CallMessage';
 import type {
   NativeCallInfo,
-  NativeCallState,
-  NativeCallFeedbackIssue,
-  NativeCallFeedbackScore,
-  NativeCallQualityWarning,
 } from './common';
 
 export interface NativeCallConnectedEvent {
