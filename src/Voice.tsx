@@ -16,7 +16,7 @@ import type { TwilioError } from './error/TwilioError';
 import { UnsupportedPlatformError } from './error/UnsupportedPlatformError';
 import { constructTwilioError } from './error/utility';
 import type { NativeAudioDeviceInfo } from './type/AudioDevice';
-import type { NativeCallInfo } from './type/Call';
+import type { NativeCallInfo } from './type/common';
 import type { NativeCallInviteInfo } from './type/CallInvite';
 import type { CallKit } from './type/CallKit';
 import type { CustomParameters, Uuid } from './type/common';
@@ -35,6 +35,7 @@ import type { NativeVoiceEvent, NativeVoiceEventType } from './type/Voice';
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export declare interface Voice {
   /**
    * ------------
@@ -62,7 +63,7 @@ export declare interface Voice {
   emit(voiceEvent: Voice.Event.Unregistered): boolean;
 
   /** @internal */
-  emit(voiceEvent: Voice.Event, ...args: any[]): boolean;
+  emit(voiceEvent: Voice.Event, ...args: unknown[]): boolean;
 
   /**
    * ----------------
@@ -233,6 +234,7 @@ export declare interface Voice {
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class Voice extends EventEmitter {
   /**
    * Handlers for native voice events. Set upon construction so we can
@@ -795,6 +797,7 @@ export class Voice extends EventEmitter {
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Voice {
   /**
    * Options to pass to the {@link (Voice:class).connect} method.
@@ -883,6 +886,7 @@ export namespace Voice {
    * Listener types for all events emitted by a {@link (Voice:class)
    * | Voice object.}
    */
+    // eslint-disable-next-line @typescript-eslint/no-namespace
   export namespace Listener {
     /**
      * Audio devices updated event listener. This should be the function
@@ -952,6 +956,6 @@ export namespace Voice {
      *
      * See {@link (Voice:interface).(addListener:6)}.
      */
-    export type Generic = (...args: any[]) => void;
+    export type Generic = (...args: unknown[]) => void;
   }
 }

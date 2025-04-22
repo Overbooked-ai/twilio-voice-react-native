@@ -25,7 +25,7 @@ import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
 import { Constants } from './constants';
 import type { NativeCallInfo } from './type/Call';
-import { NativeCall } from './expo/ExpoModule';
+import { NativeCall } from '../lib/typescript/expo/ExpoModule';
 
 /**
  * Defines strict typings for all events emitted by {@link (CallInvite:class)
@@ -40,6 +40,7 @@ import { NativeCall } from './expo/ExpoModule';
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export declare interface CallInvite {
   /**
    * ------------
@@ -246,6 +247,7 @@ export declare interface CallInvite {
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class CallInvite extends EventEmitter {
   /**
    * The current state of the call invite.
@@ -315,7 +317,7 @@ export class CallInvite extends EventEmitter {
    */
   private _handleUnexpectedCallInviteEventType(event: never) {
     throw new TwilioError(
-      `Unknown event type "${(event as any)?.type}" reached call invite.`
+      `Unknown event type "${(event as { type: string })?.type}" reached call invite.`
     );
   }
 
@@ -383,9 +385,7 @@ export class CallInvite extends EventEmitter {
   /**
    * Handle when this call invite is accepted.
    */
-  private _handleCallInviteAccepted = ({
-    callInvite,
-  }: NativeCallInviteAcceptedEvent) => {
+  private _handleCallInviteAccepted = ({}: NativeCallInviteAcceptedEvent) => {
     this._state = CallInvite.State.Accepted;
 
     const callInfo: NativeCallInfo = {
@@ -396,7 +396,9 @@ export class CallInvite extends EventEmitter {
       to: this._to,
       isMuted: false,
       isOnHold: false,
-      state: NativeCall.State.Connecting
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      state: NativeCall.State.Connecting,
     };
     const call = new Call(callInfo);
 
@@ -635,6 +637,8 @@ export class CallInvite extends EventEmitter {
  *
  * @public
  */
+
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace CallInvite {
   /**
    * Options to pass to the native layer when accepting the call.
@@ -706,6 +710,7 @@ export namespace CallInvite {
    * Listener types for all events emitted by a
    * {@link (CallInvite:class) | Call invite object.}
    */
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   export namespace Listener {
     /**
      * Accepted event listener. This should be the function signature of any

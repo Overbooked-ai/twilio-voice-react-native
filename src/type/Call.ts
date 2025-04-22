@@ -1,24 +1,13 @@
 import type { Constants } from '../constants';
 import type { NativeErrorInfo } from './Error';
 import type { NativeCallMessageInfo } from './CallMessage';
-import { NativeCall, NativeCallQualityWarning } from '../expo/ExpoModule';
-
-export interface NativeCallInfo {
-  uuid: string;
-  customParameters: { [key: string]: string };
-  from: string;
-  isMuted: boolean;
-  isOnHold: boolean;
-  state: NativeCall.State;
-  to: string;
-  sid: string;
-  initialConnectedTimestamp?: number;
-  fromDisplayName?: string;
-  toDisplayName?: string;
-  callQualityWarnings?: NativeCallQualityWarning[];
-  callFeedbackIssues?: NativeCallFeedbackIssue[];
-  callFeedbackScore?: NativeCallFeedbackScore;
-}
+import type {
+  NativeCallInfo,
+  NativeCallState,
+  NativeCallFeedbackIssue,
+  NativeCallFeedbackScore,
+  NativeCallQualityWarning,
+} from './common';
 
 export interface NativeCallConnectedEvent {
   type: Constants.CallEventConnected;
@@ -88,19 +77,11 @@ export type NativeCallEventType =
   | Constants.CallEventRinging
   | Constants.CallEventMessageReceived;
 
-export type NativeCallFeedbackIssue =
-  | Constants.CallFeedbackIssueAudioLatency
-  | Constants.CallFeedbackIssueChoppyAudio
-  | Constants.CallFeedbackIssueDroppedCall
-  | Constants.CallFeedbackIssueEcho
-  | Constants.CallFeedbackIssueNoisyCall
-  | Constants.CallFeedbackIssueNotReported
-  | Constants.CallFeedbackIssueOneWayAudio;
-
-export type NativeCallFeedbackScore =
-  | Constants.CallFeedbackScoreNotReported
-  | Constants.CallFeedbackScoreOne
-  | Constants.CallFeedbackScoreTwo
-  | Constants.CallFeedbackScoreThree
-  | Constants.CallFeedbackScoreFour
-  | Constants.CallFeedbackScoreFive;
+// Re-export the types for backward compatibility
+export {
+  NativeCallInfo,
+  NativeCallState,
+  NativeCallFeedbackIssue,
+  NativeCallFeedbackScore,
+  NativeCallQualityWarning,
+};

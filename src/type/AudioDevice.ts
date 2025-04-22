@@ -1,16 +1,15 @@
-import type { AudioDevice } from '../AudioDevice';
 import type { Constants } from '../constants';
-import type { Uuid } from './common';
+import type { NativeAudioDeviceType } from './common';
 
 export interface NativeAudioDeviceInfo {
-  uuid: Uuid;
-  type: AudioDevice.Type;
+  uuid: string;
+  type: NativeAudioDeviceType;
   name: string;
 }
 
 export interface NativeAudioDevicesInfo {
-  audioDevices: NativeAudioDeviceInfo[];
   selectedDevice?: NativeAudioDeviceInfo;
+  audioDevices: NativeAudioDeviceInfo[];
 }
 
 export interface NativeAudioDevicesUpdatedEvent extends NativeAudioDevicesInfo {

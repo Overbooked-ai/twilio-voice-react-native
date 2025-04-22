@@ -37,6 +37,7 @@ import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export declare interface Call {
   /**
    * ------------
@@ -354,6 +355,7 @@ export declare interface Call {
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class Call extends EventEmitter {
   /**
    * The `Uuid` of this call. Used to identify calls between the JS and native
@@ -439,9 +441,10 @@ export class Call extends EventEmitter {
     this._customParameters = { ...customParameters };
     this._from = from;
     this._sid = sid;
-    this._state = typeof state === 'string' 
-      ? (state as unknown as Call.State) 
-      : Call.State.Connecting;
+    this._state =
+      typeof state === 'string'
+        ? (state as unknown as Call.State)
+        : Call.State.Connecting;
     this._to = to;
     this._isMuted = isMuted;
     this._isOnHold = isOnHold;
@@ -778,7 +781,9 @@ export class Call extends EventEmitter {
    *      call.
    */
   getStats(): Promise<RTCStats.StatsReport> {
-    return NativeModule.call_getStats(this._uuid) as Promise<RTCStats.StatsReport>;
+    return NativeModule.call_getStats(
+      this._uuid
+    ) as Promise<RTCStats.StatsReport>;
   }
 
   /**
@@ -970,6 +975,7 @@ export class Call extends EventEmitter {
  *
  * @public
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Call {
   /**
    * Enumeration of all event strings emitted by {@link (Call:class)} objects.
@@ -1177,6 +1183,7 @@ export namespace Call {
    * Listener types for all events emitted by a
    * {@link (Call:class) | Call object.}
    */
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   export namespace Listener {
     /**
      * Connected event listener. This should be the function signature of any
@@ -1274,7 +1281,7 @@ export namespace Call {
      * @remarks
      * See {@link (Call:interface).(addListener:9)}.
      */
-    export type Generic = (...args: any[]) => void;
+    export type Generic = (...args: unknown[]) => void;
   }
 }
 
@@ -1320,12 +1327,24 @@ const validScores = [
  * @internal
  */
 const scoreMap: Record<Call.Score, NativeCallFeedbackScore> = {
-  [Call.Score.NotReported]: Constants.CallFeedbackScoreNotReported,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Score.One]: Constants.CallFeedbackScoreOne,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Score.Two]: Constants.CallFeedbackScoreTwo,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Score.Three]: Constants.CallFeedbackScoreThree,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Score.Four]: Constants.CallFeedbackScoreFour,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Score.Five]: Constants.CallFeedbackScoreFive,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  [Call.Score.NotReported]: Constants.CallFeedbackScoreNotReported,
 };
 
 /**
@@ -1335,11 +1354,25 @@ const scoreMap: Record<Call.Score, NativeCallFeedbackScore> = {
  * @internal
  */
 const issueMap: Record<Call.Issue, NativeCallFeedbackIssue> = {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.AudioLatency]: Constants.CallFeedbackIssueAudioLatency,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.ChoppyAudio]: Constants.CallFeedbackIssueChoppyAudio,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.DroppedCall]: Constants.CallFeedbackIssueDroppedCall,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.Echo]: Constants.CallFeedbackIssueEcho,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.NoisyCall]: Constants.CallFeedbackIssueNoisyCall,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.NotReported]: Constants.CallFeedbackIssueNotReported,
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
   [Call.Issue.OneWayAudio]: Constants.CallFeedbackIssueOneWayAudio,
 };
