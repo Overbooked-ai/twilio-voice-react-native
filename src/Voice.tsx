@@ -11,16 +11,16 @@ import { Call } from './Call';
 import { CallInvite } from './CallInvite';
 import { NativeEventEmitter, NativeModule, Platform } from './common';
 import { Constants } from './constants';
-import { InvalidArgumentError } from './error/InvalidArgumentError';
-import type { TwilioError } from './error/TwilioError';
-import { UnsupportedPlatformError } from './error/UnsupportedPlatformError';
+import { InvalidArgumentError } from './error';
+import type { TwilioError } from './error';
+import { UnsupportedPlatformError } from './error';
 import { constructTwilioError } from './error/utility';
-import type { NativeAudioDeviceInfo } from './type/AudioDevice';
-import type { NativeCallInfo } from './type/common';
-import type { NativeCallInviteInfo } from './type/CallInvite';
-import type { CallKit } from './type/CallKit';
-import type { CustomParameters, Uuid } from './type/common';
-import type { NativeVoiceEvent, NativeVoiceEventType } from './type/Voice';
+import type { NativeAudioDeviceInfo } from './type';
+import type { NativeCallInfo } from './type';
+import type { NativeCallInviteInfo } from './type';
+import type { CallKit } from './type';
+import type { CustomParameters, Uuid } from './type';
+import type { NativeVoiceEvent, NativeVoiceEventType } from './type';
 
 /**
  * Defines strict typings for all events emitted by {@link (Voice:class)
@@ -368,6 +368,8 @@ export class Voice extends EventEmitter {
 
     const { callInvite: callInviteInfo } = nativeVoiceEvent;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
     const callInvite = new CallInvite(callInviteInfo, CallInvite.State.Pending);
 
     this.emit(Voice.Event.CallInvite, callInvite);
@@ -577,6 +579,8 @@ export class Voice extends EventEmitter {
   async getCallInvites(): Promise<ReadonlyMap<Uuid, CallInvite>> {
     const callInviteInfos = await NativeModule.voice_getCallInvites();
     const callInvitesMap = new Map<Uuid, CallInvite>(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
       callInviteInfos.map((callInviteInfo: NativeCallInviteInfo) => [
         callInviteInfo.uuid,
         new CallInvite(callInviteInfo, CallInvite.State.Pending),
@@ -886,7 +890,7 @@ export namespace Voice {
    * Listener types for all events emitted by a {@link (Voice:class)
    * | Voice object.}
    */
-    // eslint-disable-next-line @typescript-eslint/no-namespace
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   export namespace Listener {
     /**
      * Audio devices updated event listener. This should be the function
