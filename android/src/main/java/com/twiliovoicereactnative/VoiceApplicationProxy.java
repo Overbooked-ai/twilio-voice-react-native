@@ -124,7 +124,7 @@ public class VoiceApplicationProxy {
     return getInstance().getJSEventEmitterInstance();
   }
 
-  public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceAPI() {
+  public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceApi() {
     return getInstance().getVoiceServiceAPIInstance();
   }
 

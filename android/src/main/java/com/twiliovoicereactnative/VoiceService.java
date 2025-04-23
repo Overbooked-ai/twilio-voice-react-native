@@ -63,17 +63,74 @@ import java.util.UUID;
 
 public class VoiceService extends Service {
   private static final SDKLog logger = new SDKLog(VoiceService.class);
+  public class VoiceServiceBinder extends Binder implements VoiceServiceAPI {
+    @Override
+    public void register(String token) throws SecurityException {
+      Voice.register(token, Voice.RegistrationChannel.FCM, token, null);
+    }
+
+    @Override
+    public void unregister(String token) throws SecurityException {
+      Voice.unregister(token, Voice.RegistrationChannel.FCM, token, null);
+    }
+
+    @Override
+    public Call connect(ConnectOptions connectOptions, Call.Listener callListener) throws SecurityException {
+      return Voice.connect(VoiceService.this, connectOptions, callListener);
+    }
+
+    @Override
+    public void disconnect(CallRecordDatabase.CallRecord callRecord) {
+      VoiceService.this.disconnect(callRecord);
+    }
+
+    @Override
+    public void acceptCall(CallRecordDatabase.CallRecord callRecord) throws SecurityException {
+      VoiceService.this.acceptCall(callRecord);
+    }
+
+    @Override
+    public void rejectCall(CallRecordDatabase.CallRecord callRecord) {
+      VoiceService.this.rejectCall(callRecord);
+    }
+
+    @Override
+    public void cancelCall(CallRecordDatabase.CallRecord callRecord) {
+      VoiceService.this.cancelCall(callRecord);
+    }
+
+    @Override
+    public void incomingCall(CallRecordDatabase.CallRecord callRecord) {
+      VoiceService.this.incomingCall(callRecord);
+    }
+
+    @Override
+    public void cancelActiveCallNotification(CallRecordDatabase.CallRecord callRecord) {
+      VoiceService.this.cancelActiveCallNotification(callRecord);
+    }
+
+    @Override
+    public void raiseOutgoingCallNotification(CallRecordDatabase.CallRecord callRecord) {
+      VoiceService.this.raiseOutgoingCallNotification(callRecord);
+    }
+
+    @Override
+    public Context getServiceContext() {
+      return VoiceService.this;
+    }
+  }
+
   public interface VoiceServiceAPI extends IBinder {
     void register(String token) throws SecurityException;
     void unregister(String token) throws SecurityException;
     Call connect(ConnectOptions connectOptions, Call.Listener callListener) throws SecurityException;
-    void disconnect(CallRecord callRecord);
-    void acceptCall(CallRecord callRecord) throws SecurityException;
-    void rejectCall(CallRecord callRecord);
-    void cancelCall(CallRecord callRecord);
-    void incomingCall(CallRecord callRecord);
-    void cancelActiveCallNotification(CallRecord callRecord);
-    void raiseOutgoingCallNotification(CallRecord callRecord);
+    void disconnect(CallRecordDatabase.CallRecord callRecord);
+    void acceptCall(CallRecordDatabase.CallRecord callRecord) throws SecurityException;
+    void rejectCall(CallRecordDatabase.CallRecord callRecord);
+    void cancelCall(CallRecordDatabase.CallRecord callRecord);
+    void incomingCall(CallRecordDatabase.CallRecord callRecord);
+    void cancelActiveCallNotification(CallRecordDatabase.CallRecord callRecord);
+    void raiseOutgoingCallNotification(CallRecordDatabase.CallRecord callRecord);
     Context getServiceContext();
   }
 
@@ -126,7 +183,7 @@ public class VoiceService extends Service {
 
   @Override
   public IBinder onBind(Intent intent) {
-    return new VoiceServiceAPI();
+    return new VoiceServiceBinder();
   }
   public static Intent constructMessage(@NonNull Context context,
                                         @NonNull final String action,
