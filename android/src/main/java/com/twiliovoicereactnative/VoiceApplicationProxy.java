@@ -179,10 +179,11 @@ public class VoiceApplicationProxy {
       return;
     }
 
+    // Initialize components in order
+    jsEventEmitter = new JSEventEmitter();
     callRecordDatabase = new CallRecordDatabase();
     audioSwitchManager = new AudioSwitchManager(context);
     mediaPlayerManager = new MediaPlayerManager(context);
-    jsEventEmitter = new JSEventEmitter();
     
     isInitialized = true;
   }
@@ -193,6 +194,9 @@ public class VoiceApplicationProxy {
     }
     Log.d(TAG, "Initializing VoiceApplicationProxy");
 
+    // Make sure basic initialization is done first
+    initialize();
+
     // Initialize components in order
     audioSwitchManager.start();
     // No need to call play() or start() here since it should be called with specific sounds when needed
@@ -202,8 +206,6 @@ public class VoiceApplicationProxy {
       new Intent(context, VoiceService.class),
       voiceServiceObserver,
       Context.BIND_AUTO_CREATE);
-
-    isInitialized = true;
   }
 
   public void onTerminate() {
