@@ -1,5 +1,179 @@
 # PING_PONG.md - Expo Support Integration Status
 
+## Latest Update: Component Initialization Changes
+
+### Summary of Recent Changes
+
+We've resolved several critical initialization issues in the Android native modules, particularly around event emission and audio device management. The key changes involve restructuring how components are initialized and shared between the React Native module and the VoiceApplicationProxy.
+
+### Key Components Modified
+
+1. **TwilioVoiceReactNativeModule**
+   - Now owns the creation and initialization of core components
+   - Creates JSEventEmitter instance directly
+   - Creates AudioSwitchManager instance directly
+   - Shares instances with VoiceApplicationProxy via setters
+   - Initialization sequence ensures components are ready before use
+
+2. **VoiceApplicationProxy**
+   - Modified to accept externally created components
+   - Added thread-safe setters for components
+   - Simplified getters to return stored instances
+   - Removed direct component creation
+   - Added null checks throughout component usage
+
+3. **Component Initialization Flow**
+```java
+// In TwilioVoiceReactNativeModule constructor:
+1. Create JSEventEmitter
+2. Initialize JSEventEmitter with ReactContext
+3. Get VoiceApplicationProxy instance
+4. Share JSEventEmitter with proxy
+5. Create AudioSwitchManager
+6. Share AudioSwitchManager with proxy
+7. Set up audio device listener
+```
+
+### Implementation Details
+
+#### JSEventEmitter Management
+```java
+// In TwilioVoiceReactNativeModule
+private final JSEventEmitter jsEventEmitter;
+
+// Creation and initialization
+this.jsEventEmitter = new JSEventEmitter();
+this.jsEventEmitter.setContext(reactContext);
+
+// Share with proxy
+VoiceApplicationProxy proxy = VoiceApplicationProxy.getInstance(reactContext);
+proxy.setJSEventEmitter(this.jsEventEmitter);
+```
+
+#### AudioSwitchManager Management
+```java
+// In TwilioVoiceReactNativeModule
+private final AudioSwitchManager audioSwitchManager;
+
+// Creation and initialization
+this.audioSwitchManager = new AudioSwitchManager(reactContext);
+proxy.setAudioSwitchManager(this.audioSwitchManager);
+
+// Set up listener
+this.audioSwitchManager.setListener((audioDevices, selectedDeviceUuid, selectedDevice) -> {
+  // Handle audio device updates
+});
+```
+
+#### VoiceApplicationProxy Changes
+```java
+// Thread-safe component management
+public void setJSEventEmitter(JSEventEmitter emitter) {
+  synchronized (lock) {
+    this.jsEventEmitter = emitter;
+  }
+}
+
+public void setAudioSwitchManager(AudioSwitchManager manager) {
+  synchronized (lock) {
+    this.audioSwitchManager = manager;
+  }
+}
+
+// Simplified getters
+public static synchronized JSEventEmitter getJSEventEmitter() {
+  return getInstance().jsEventEmitter;
+}
+
+public static synchronized AudioSwitchManager getAudioSwitchManager() {
+  return getInstance().audioSwitchManager;
+}
+```
+
+### Current State
+
+1. **Fixed Issues:**
+   - Resolved NPE in JSEventEmitter.sendEvent
+   - Fixed AudioSwitchManager initialization
+   - Eliminated race conditions in component initialization
+   - Added proper thread safety with synchronized blocks
+
+2. **Component Lifecycle:**
+   - Components are created in a deterministic order
+   - Each component is initialized before use
+   - Proper cleanup in onDestroy/invalidate
+   - Thread-safe access to shared components
+
+3. **Event Handling:**
+   - Events are properly emitted to JS layer
+   - Audio device updates are correctly propagated
+   - Registration events work as expected
+
+### Testing Requirements
+
+1. **Core Functionality:**
+   - Verify call creation and management
+   - Test audio device selection
+   - Confirm event emission to JS layer
+   - Check registration/unregistration flow
+
+2. **Edge Cases:**
+   - Test module recreation scenarios
+   - Verify behavior during rapid state changes
+   - Check memory management
+   - Test concurrent operations
+
+3. **Integration Points:**
+   - Verify Expo module integration
+   - Test FCM token handling
+   - Check audio routing
+   - Verify push notification flow
+
+### Next Steps
+
+1. **Monitoring:**
+   - Add more detailed logging
+   - Implement performance metrics
+   - Track component lifecycle
+
+2. **Optimization:**
+   - Review synchronization points
+   - Optimize event emission
+   - Consider lazy initialization where appropriate
+
+3. **Documentation:**
+   - Add inline code documentation
+   - Update API documentation
+   - Document threading model
+
+### Notes for Developers
+
+1. **Component Access:**
+   - Always use getters from VoiceApplicationProxy
+   - Don't create components directly
+   - Check for null before using components
+
+2. **Thread Safety:**
+   - Use synchronized blocks when modifying state
+   - Be aware of main thread requirements
+   - Handle async operations properly
+
+3. **Testing:**
+   - Run full test suite before changes
+   - Verify all event paths
+   - Test edge cases thoroughly
+
+### Build Verification
+
+Always run these checks before committing:
+```bash
+yarn run check:type   # Verify TypeScript types
+yarn run check:lint   # Check code style
+yarn test            # Run test suite
+```
+
+## Previous Updates
+
 ## Summary (As of latest update)
 
 This fork of `twilio-voice-react-native` has been modified to add initial support for Expo, following the guide in issue #496.
@@ -27,8 +201,8 @@ This fork of `twilio-voice-react-native` has been modified to add initial suppor
 
 *   `voice.getVersion()`
 *   `voice.connect(...)` (Outgoing calls)
-*   `voice.register(token, fcmToken)`
-*   `voice.unregister(token, fcmToken)`
+*   `voice.register(token)`
+*   `voice.unregister(token)`
 *   `voice.getDeviceToken()`
 *   `callInvite.accept(...)`
 *   `callInvite.reject(...)`

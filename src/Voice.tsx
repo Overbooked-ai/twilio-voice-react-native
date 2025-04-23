@@ -293,25 +293,29 @@ export class Voice extends EventEmitter {
     params: CustomParameters,
     notificationDisplayName: string | undefined
   ) {
-    const connectResult = await NativeModule.voice_connect_android(
-      token,
-      params,
-      notificationDisplayName
-    )
-      .then((callInfo) => {
-        return { type: 'ok', callInfo } as const;
-      })
-      .catch((error) => {
-        const code = error.userInfo.code;
-        const message = error.userInfo.message;
-        return { type: 'err', message, code } as const;
-      });
+    try {
+      const callInfo = await NativeModule.voice_connect_android(
+        token,
+        params,
+        notificationDisplayName
+      );
+      return new Call(callInfo as NativeCallInfo);
+    } catch (error) {
+      // Handle different error object structures
+      let errorMessage = 'Failed to connect call';
+      let errorCode = 31000; // Default error code
 
-    if (connectResult.type === 'err') {
-      throw constructTwilioError(connectResult.message, connectResult.code);
+      if (error && typeof error === 'object') {
+        if ('userInfo' in error) {
+          errorMessage = (error.userInfo as any).message || errorMessage;
+          errorCode = (error.userInfo as any).code || errorCode;
+        } else if ('message' in error) {
+          errorMessage = (error as Error).message;
+        }
+      }
+
+      throw constructTwilioError(errorMessage, errorCode);
     }
-
-    return new Call(connectResult.callInfo as NativeCallInfo);
   }
 
   /**
