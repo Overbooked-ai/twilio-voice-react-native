@@ -123,13 +123,17 @@ const RNTwilioVoice =
 let ExpoTwilioVoice: TwilioVoiceExpoModule | null = null;
 if (Platform.OS === 'android') {
   try {
-    ExpoTwilioVoice =
-      NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
+    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
+    if (!ExpoTwilioVoice) {
+      throw new Error('TwilioVoiceReactNativeExpo module is null');
+    }
   } catch (error) {
     console.error(
       'Expo module TwilioVoiceReactNativeExpo not found. Ensure you have installed the library correctly and run expo prebuild.',
       error
     );
+    // Fall back to regular React Native module on Android if Expo module is not available
+    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNative as unknown as TwilioVoiceExpoModule;
   }
 }
 
@@ -137,15 +141,15 @@ if (Platform.OS === 'android') {
 // Implements the unified TwilioVoiceReactNative interface
 const NativeModuleWrapper: TwilioVoiceReactNative = {
   addListener: (eventName: string) => {
-    if (Platform.OS === 'android') {
-      ExpoTwilioVoice?.addListener(eventName);
+    if (Platform.OS === 'android' && ExpoTwilioVoice) {
+      ExpoTwilioVoice.addListener(eventName);
     } else {
       RNTwilioVoice.addListener(eventName);
     }
   },
   removeListeners: (count: number) => {
-    if (Platform.OS === 'android') {
-      ExpoTwilioVoice?.removeListeners(count);
+    if (Platform.OS === 'android' && ExpoTwilioVoice) {
+      ExpoTwilioVoice.removeListeners(count);
     } else {
       RNTwilioVoice.removeListeners(count);
     }
@@ -344,12 +348,15 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
       ios: () => RNTwilioVoice.voice_getVersion(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
-  voice_handleEvent: (message: Record<string, string>): Promise<boolean> =>
-    Platform.select({
-      android: () => ExpoTwilioVoice!.handleEvent(message),
-      ios: () => RNTwilioVoice.voice_handleEvent(message),
-      default: () => Promise.reject(false),
-    })!(),
+  voice_handleEvent: (remoteMessage: Record<string, string>): Promise<boolean> => {
+    if (Platform.OS === 'android' && ExpoTwilioVoice) {
+      return ExpoTwilioVoice.handleEvent(remoteMessage);
+    } else if (Platform.OS === 'android') {
+      return RNTwilioVoice.voice_handleEvent(remoteMessage);
+    } else {
+      return Promise.reject('Unsupported platform');
+    }
+  },
   voice_register: (token: string): Promise<void> => {
     return RNTwilioVoice.voice_register(token);
   },
