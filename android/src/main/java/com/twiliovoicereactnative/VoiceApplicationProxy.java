@@ -33,10 +33,10 @@ public class VoiceApplicationProxy {
   private static VoiceApplicationProxy instance = null;
   private static final Object lock = new Object();
   private final Context context;
-  private final CallRecordDatabase callRecordDatabase;
-  private final AudioSwitchManager audioSwitchManager;
-  private final MediaPlayerManager mediaPlayerManager;
-  private final JSEventEmitter jsEventEmitter;
+  private CallRecordDatabase callRecordDatabase;
+  private AudioSwitchManager audioSwitchManager;
+  private MediaPlayerManager mediaPlayerManager;
+  private JSEventEmitter jsEventEmitter;
   private boolean isInitialized = false;
   private final ServiceConnection voiceServiceObserver = new ServiceConnection() {
     @Override
@@ -72,11 +72,7 @@ public class VoiceApplicationProxy {
       }
       instance = this;
       this.context = reactNativeHost.getAssociatedApplication();
-      this.callRecordDatabase = new CallRecordDatabase();
-      this.audioSwitchManager = new AudioSwitchManager(context);
-      this.mediaPlayerManager = new MediaPlayerManager(context);
-      this.jsEventEmitter = new JSEventEmitter();
-      this.isInitialized = true;
+      initialize();
     }
   }
 
@@ -88,11 +84,7 @@ public class VoiceApplicationProxy {
       }
       instance = this;
       this.context = context;
-      this.callRecordDatabase = new CallRecordDatabase();
-      this.audioSwitchManager = new AudioSwitchManager(context);
-      this.mediaPlayerManager = new MediaPlayerManager(context);
-      this.jsEventEmitter = new JSEventEmitter();
-      this.isInitialized = true;
+      initialize();
     }
   }
 
@@ -115,49 +107,57 @@ public class VoiceApplicationProxy {
     }
   }
 
-  public static synchronized CallRecordDatabase getCallRecordDatabase() {
-    VoiceApplicationProxy proxy = getInstance();
-    if (!proxy.isInitialized) {
+  public synchronized CallRecordDatabase getCallRecordDatabase() {
+    if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
     }
-    return proxy.callRecordDatabase;
+    return callRecordDatabase;
   }
 
-  public static synchronized AudioSwitchManager getAudioSwitchManager() {
-    VoiceApplicationProxy proxy = getInstance();
-    if (!proxy.isInitialized) {
+  public synchronized AudioSwitchManager getAudioSwitchManager() {
+    if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
     }
-    return proxy.audioSwitchManager;
+    return audioSwitchManager;
   }
 
-  public static synchronized MediaPlayerManager getMediaPlayerManager() {
-    VoiceApplicationProxy proxy = getInstance();
-    if (!proxy.isInitialized) {
+  public synchronized MediaPlayerManager getMediaPlayerManager() {
+    if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
     }
-    return proxy.mediaPlayerManager;
+    return mediaPlayerManager;
   }
 
-  public static synchronized JSEventEmitter getJSEventEmitter() {
-    VoiceApplicationProxy proxy = getInstance();
-    if (!proxy.isInitialized) {
+  public synchronized JSEventEmitter getJSEventEmitter() {
+    if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
     }
-    return proxy.jsEventEmitter;
+    return jsEventEmitter;
   }
 
-  public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceApi() {
-    VoiceApplicationProxy proxy = getInstance();
-    if (!proxy.isInitialized) {
+  public synchronized VoiceService.VoiceServiceAPI getVoiceServiceAPI() {
+    if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
     }
-    return proxy.voiceServiceApi;
+    return voiceServiceApi;
+  }
+
+  private void initialize() {
+    if (isInitialized) {
+      return;
+    }
+
+    callRecordDatabase = new CallRecordDatabase();
+    audioSwitchManager = new AudioSwitchManager(context);
+    mediaPlayerManager = new MediaPlayerManager(context);
+    jsEventEmitter = new JSEventEmitter();
+    
+    isInitialized = true;
   }
 
   public void onCreate() {
@@ -238,71 +238,6 @@ public class VoiceApplicationProxy {
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
       return null;
-    }
-  }
-
-  public VoiceServiceAPI getVoiceServiceAPI() {
-    synchronized (lock) {
-      if (voiceServiceApi == null) {
-        initialize();
-      }
-      return voiceServiceApi;
-    }
-  }
-
-  public MediaPlayerManager getMediaPlayerManager() {
-    synchronized (lock) {
-      if (mediaPlayerManager == null) {
-        initialize();
-      }
-      return mediaPlayerManager;
-    }
-  }
-
-  public AudioSwitchManager getAudioSwitchManager() {
-    synchronized (lock) {
-      if (audioSwitchManager == null) {
-        initialize();
-      }
-      return audioSwitchManager;
-    }
-  }
-
-  public CallRecordDatabase getCallRecordDatabase() {
-    synchronized (lock) {
-      if (callRecordDatabase == null) {
-        initialize();
-      }
-      return callRecordDatabase;
-    }
-  }
-
-  public JSEventEmitter getJSEventEmitter() {
-    synchronized (lock) {
-      if (jsEventEmitter == null) {
-        initialize();
-      }
-      return jsEventEmitter;
-    }
-  }
-
-  private void initialize() {
-    synchronized (lock) {
-      if (voiceServiceApi == null) {
-        voiceServiceApi = new VoiceServiceAPI(context);
-      }
-      if (mediaPlayerManager == null) {
-        mediaPlayerManager = new MediaPlayerManager(context);
-      }
-      if (audioSwitchManager == null) {
-        audioSwitchManager = new AudioSwitchManager(context);
-      }
-      if (callRecordDatabase == null) {
-        callRecordDatabase = new CallRecordDatabase(context);
-      }
-      if (jsEventEmitter == null) {
-        jsEventEmitter = new JSEventEmitter();
-      }
     }
   }
 }
