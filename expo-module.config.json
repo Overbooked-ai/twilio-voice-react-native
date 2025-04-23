@@ -4,6 +4,6 @@
     "modules": ["TwilioVoiceReactNative"] 
   },
   "android": {
-    "modules": ["com.twiliovoicereactnative.expo.ExpoPackage"]
+    "modules": ["com.twiliovoicereactnative.expo.ExpoModule"]
   }
 } 
