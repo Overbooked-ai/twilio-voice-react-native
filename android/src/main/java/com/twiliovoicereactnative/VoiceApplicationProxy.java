@@ -73,7 +73,7 @@ public class VoiceApplicationProxy {
     this.callRecordDatabase = new CallRecordDatabase();
     this.audioSwitchManager = new AudioSwitchManager(context);
     this.mediaPlayerManager = new MediaPlayerManager(context);
-    this.jsEventEmitter = new JSEventEmitter(context);
+    this.jsEventEmitter = new JSEventEmitter();
   }
 
   // Constructor for Expo
@@ -86,7 +86,7 @@ public class VoiceApplicationProxy {
     this.callRecordDatabase = new CallRecordDatabase();
     this.audioSwitchManager = new AudioSwitchManager(context);
     this.mediaPlayerManager = new MediaPlayerManager(context);
-    this.jsEventEmitter = new JSEventEmitter(context);
+    this.jsEventEmitter = new JSEventEmitter();
   }
 
   public static synchronized VoiceApplicationProxy getInstance(Context context) {
@@ -101,8 +101,8 @@ public class VoiceApplicationProxy {
       return;
     }
     Log.d(TAG, "Initializing VoiceApplicationProxy");
-    audioSwitchManager.initialize();
-    mediaPlayerManager.initialize();
+    audioSwitchManager.start();
+    mediaPlayerManager.start();
     isInitialized = true;
     // launch and bind to voice call service
     context.bindService(
@@ -116,8 +116,8 @@ public class VoiceApplicationProxy {
       return;
     }
     Log.d(TAG, "Terminating VoiceApplicationProxy");
-    audioSwitchManager.deinitialize();
-    mediaPlayerManager.deinitialize();
+    audioSwitchManager.stop();
+    mediaPlayerManager.stop();
     // shutdown notificaiton channels
     NotificationUtility.destroyNotificationChannels(context);
     // verify that no call records are leaked
@@ -132,20 +132,20 @@ public class VoiceApplicationProxy {
     isInitialized = false;
   }
 
-  public CallRecordDatabase getCallRecordDatabase() {
-    return callRecordDatabase;
+  public static CallRecordDatabase getCallRecordDatabase() {
+    return VoiceApplicationProxy.instance.callRecordDatabase;
   }
 
-  public AudioSwitchManager getAudioSwitchManager() {
-    return audioSwitchManager;
+  public static AudioSwitchManager getAudioSwitchManager() {
+    return VoiceApplicationProxy.instance.audioSwitchManager;
   }
 
-  public MediaPlayerManager getMediaPlayerManager() {
-    return mediaPlayerManager;
+  public static MediaPlayerManager getMediaPlayerManager() {
+    return VoiceApplicationProxy.instance.mediaPlayerManager;
   }
 
-  public JSEventEmitter getJSEventEmitter() {
-    return jsEventEmitter;
+  public static JSEventEmitter getJSEventEmitter() {
+    return VoiceApplicationProxy.instance.jsEventEmitter;
   }
 
   public boolean isInitialized() {
