@@ -102,7 +102,7 @@ public class VoiceApplicationProxy {
     }
     Log.d(TAG, "Initializing VoiceApplicationProxy");
     audioSwitchManager.start();
-    mediaPlayerManager.start();
+    // MediaPlayerManager doesn't need initialization, it's ready to use after construction
     isInitialized = true;
     // launch and bind to voice call service
     context.bindService(
