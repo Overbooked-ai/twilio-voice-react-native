@@ -91,7 +91,7 @@ class ExpoModule : Module() {
 
   // --- Module Definition ---
   override fun definition() = ModuleDefinition {
-    Name("ExpoTwilioVoice")
+    Name("TwilioVoiceReactNativeExpo")
 
     // Define all events that can be emitted to JavaScript
     Events(
