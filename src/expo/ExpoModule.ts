@@ -132,8 +132,8 @@ if (Platform.OS === 'android') {
       'Expo module TwilioVoiceReactNativeExpo not found. Ensure you have installed the library correctly and run expo prebuild.',
       error
     );
-    // Fall back to regular React Native module on Android if Expo module is not available
-    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNative as unknown as TwilioVoiceExpoModule;
+    // Don't fall back to regular React Native module, as we're using Expo
+    throw error;
   }
 }
 
