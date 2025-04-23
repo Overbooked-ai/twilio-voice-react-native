@@ -6,10 +6,11 @@
  */
 
 import * as ReactNative from 'react-native';
-import type { TwilioVoiceReactNative as TwilioVoiceReactNativeType } from './type/NativeModule';
 import NativeModuleWrapper from './expo/ExpoModule';
 
 // Use the Expo module wrapper which handles both platforms
 export const NativeModule = NativeModuleWrapper;
-export const NativeEventEmitter = new ReactNative.NativeEventEmitter(NativeModuleWrapper);
+export const NativeEventEmitter = new ReactNative.NativeEventEmitter(
+  NativeModuleWrapper
+);
 export const Platform = ReactNative.Platform;
