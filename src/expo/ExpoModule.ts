@@ -11,7 +11,7 @@ import type {
   RTCStats,
   NativeCallMessageInfo,
   NativeCallState,
-} from '../type/common';
+} from '../type';
 
 // Original Interface (Matches updated src/type/NativeModule.ts)
 // This defines the unified interface the rest of the library expects.
@@ -125,7 +125,8 @@ const RNTwilioVoice =
 let ExpoTwilioVoice: TwilioVoiceExpoModule | null = null;
 if (Platform.OS === 'android') {
   try {
-    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
+    ExpoTwilioVoice =
+      NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
   } catch (error) {
     console.error(
       'Expo module TwilioVoiceReactNativeExpo not found. Ensure you have installed the library correctly and run expo prebuild.',
