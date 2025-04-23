@@ -13,6 +13,7 @@ import expo.modules.kotlin.AppContext // Import AppContext
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.core.os.bundleOf
 import java.util.HashMap
 import java.util.UUID
@@ -89,8 +90,8 @@ class ExpoModule : Module() {
     get() = CallRecordDatabase.getInstance(applicationContext)
 
   // --- Module Definition ---
-  override fun definition() = ModuleDefinition { 
-    Name("TwilioVoiceReactNativeExpo")
+  override fun definition() = ModuleDefinition {
+    Name("ExpoTwilioVoice")
 
     // Define all events that can be emitted to JavaScript
     Events(
@@ -113,35 +114,46 @@ class ExpoModule : Module() {
     )
 
     // Module Lifecycle: OnCreate
-    OnCreate { 
-      logger.log("Creating TwilioVoiceReactNative Expo Module")
-      System.setProperty(CommonConstants.GLOBAL_ENV, CommonConstants.ReactNativeVoiceSDK)
-      System.setProperty(CommonConstants.SDK_VERSION, CommonConstants.ReactNativeVoiceSDKVer)
-      
-      // Ensure VoiceApplicationProxy is initialized (already happens in getter)
-      voiceApplicationProxy 
-
-      Voice.setLogLevel(if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR)
-
-      // Setup AudioSwitch listener
-      audioSwitchManager.setListener { audioDevices, selectedDeviceUuid, selectedDevice ->
-         try {
-            // Use the new serializer method
-            val audioDeviceInfoMap = ReactNativeArgumentsSerializerExpo.serializeAudioDeviceInfoExpo(
-                audioDevices, 
-                selectedDeviceUuid, 
-                selectedDevice
-            )
-            // Send event using the Module's sendEvent method
-            this@ExpoModule.sendEvent(VOICE_EVENT_AUDIO_DEVICES_UPDATED, audioDeviceInfoMap)
-         } catch (e: Exception) {
-             logger.error("Error sending audioDevicesUpdated event: ${e.message}")
-             // Optionally send an error event
-             this@ExpoModule.sendEvent(VOICE_EVENT_ERROR, bundleOf(
-                 "error" to bundleOf("message" to e.message, "code" to "E_AUDIO_EVENT_ERROR")
-             ))
-         }
+    OnCreate {
+      val reactContext = appContext.reactContext
+      if (reactContext == null) {
+        Log.e(TAG, "React context is null")
+        return@OnCreate
       }
+
+      // Initialize VoiceApplicationProxy
+      VoiceApplicationProxy.getInstance(reactContext)
+
+      // Set log level for Voice SDK
+      Voice.setLogLevel(LogLevel.DEBUG)
+
+      // Set up audio switch listener
+      VoiceApplicationProxy.getAudioSwitchManager()?.let { audioSwitchManager ->
+        audioSwitchManager.setListener(object : AudioSwitchManager.Listener {
+          override fun onAudioDeviceChanged(selectedAudioDevice: AudioDevice?) {
+            val event = Arguments.createMap().apply {
+              putString("name", selectedAudioDevice?.name ?: "unknown")
+              putString("type", selectedAudioDevice?.type?.name ?: "unknown")
+              putBoolean("selected", selectedAudioDevice != null)
+            }
+            sendEvent("audioDeviceChanged", event)
+          }
+
+          override fun onError(error: String) {
+            Log.e(TAG, "Audio switch error: $error")
+            val event = Arguments.createMap().apply {
+              putString("error", error)
+            }
+            sendEvent("audioDeviceError", event)
+          }
+        })
+      } ?: run {
+        Log.e(TAG, "AudioSwitchManager not initialized")
+      }
+    }
+
+    OnDestroy {
+      VoiceApplicationProxy.getInstance().onTerminate()
     }
 
     // --- Voice Module Functions ---

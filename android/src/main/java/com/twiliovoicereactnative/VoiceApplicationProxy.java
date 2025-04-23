@@ -31,6 +31,7 @@ import java.util.Map;
 public class VoiceApplicationProxy {
   private static final String TAG = "VoiceApplicationProxy";
   private static VoiceApplicationProxy instance = null;
+  private static final Object lock = new Object();
   private final Context context;
   private final CallRecordDatabase callRecordDatabase;
   private final AudioSwitchManager audioSwitchManager;
@@ -65,35 +66,97 @@ public class VoiceApplicationProxy {
 
   // Constructor for standard React Native
   public VoiceApplicationProxy(VoiceReactNativeHost reactNativeHost) {
-    if (null != instance) {
-      Log.e(TAG, "Voice application proxy already created!");
+    synchronized (lock) {
+      if (null != instance) {
+        Log.e(TAG, "Voice application proxy already created!");
+      }
+      instance = this;
+      this.context = reactNativeHost.getAssociatedApplication();
+      this.callRecordDatabase = new CallRecordDatabase();
+      this.audioSwitchManager = new AudioSwitchManager(context);
+      this.mediaPlayerManager = new MediaPlayerManager(context);
+      this.jsEventEmitter = new JSEventEmitter();
+      this.isInitialized = true;
     }
-    instance = this;
-    this.context = reactNativeHost.getAssociatedApplication();
-    this.callRecordDatabase = new CallRecordDatabase();
-    this.audioSwitchManager = new AudioSwitchManager(context);
-    this.mediaPlayerManager = new MediaPlayerManager(context);
-    this.jsEventEmitter = new JSEventEmitter();
   }
 
   // Constructor for Expo
   public VoiceApplicationProxy(Context context) {
-    if (null != instance) {
-      Log.e(TAG, "Voice application proxy already created!");
+    synchronized (lock) {
+      if (null != instance) {
+        Log.e(TAG, "Voice application proxy already created!");
+      }
+      instance = this;
+      this.context = context;
+      this.callRecordDatabase = new CallRecordDatabase();
+      this.audioSwitchManager = new AudioSwitchManager(context);
+      this.mediaPlayerManager = new MediaPlayerManager(context);
+      this.jsEventEmitter = new JSEventEmitter();
+      this.isInitialized = true;
     }
-    instance = this;
-    this.context = context;
-    this.callRecordDatabase = new CallRecordDatabase();
-    this.audioSwitchManager = new AudioSwitchManager(context);
-    this.mediaPlayerManager = new MediaPlayerManager(context);
-    this.jsEventEmitter = new JSEventEmitter();
   }
 
   public static synchronized VoiceApplicationProxy getInstance(Context context) {
-    if (instance == null) {
-      instance = new VoiceApplicationProxy(context);
+    synchronized (lock) {
+      if (instance == null) {
+        instance = new VoiceApplicationProxy(context);
+      }
+      return instance;
     }
-    return instance;
+  }
+
+  public static synchronized VoiceApplicationProxy getInstance() {
+    synchronized (lock) {
+      if (instance == null) {
+        throw new IllegalStateException("VoiceApplicationProxy not initialized. Call getInstance(Context) first.");
+      }
+      return instance;
+    }
+  }
+
+  public static synchronized CallRecordDatabase getCallRecordDatabase() {
+    VoiceApplicationProxy proxy = getInstance();
+    if (!proxy.isInitialized) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized");
+      return null;
+    }
+    return proxy.callRecordDatabase;
+  }
+
+  public static synchronized AudioSwitchManager getAudioSwitchManager() {
+    VoiceApplicationProxy proxy = getInstance();
+    if (!proxy.isInitialized) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized");
+      return null;
+    }
+    return proxy.audioSwitchManager;
+  }
+
+  public static synchronized MediaPlayerManager getMediaPlayerManager() {
+    VoiceApplicationProxy proxy = getInstance();
+    if (!proxy.isInitialized) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized");
+      return null;
+    }
+    return proxy.mediaPlayerManager;
+  }
+
+  public static synchronized JSEventEmitter getJSEventEmitter() {
+    VoiceApplicationProxy proxy = getInstance();
+    if (!proxy.isInitialized) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized");
+      return null;
+    }
+    return proxy.jsEventEmitter;
+  }
+
+  public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceApi() {
+    VoiceApplicationProxy proxy = getInstance();
+    if (!proxy.isInitialized) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized");
+      return null;
+    }
+    return proxy.voiceServiceApi;
   }
 
   public void onCreate() {
@@ -132,32 +195,24 @@ public class VoiceApplicationProxy {
     isInitialized = false;
   }
 
-  public static CallRecordDatabase getCallRecordDatabase() {
-    return VoiceApplicationProxy.instance.callRecordDatabase;
-  }
-
-  public static AudioSwitchManager getAudioSwitchManager() {
-    return VoiceApplicationProxy.instance.audioSwitchManager;
-  }
-
-  public static MediaPlayerManager getMediaPlayerManager() {
-    return VoiceApplicationProxy.instance.mediaPlayerManager;
-  }
-
-  public static JSEventEmitter getJSEventEmitter() {
-    return VoiceApplicationProxy.instance.jsEventEmitter;
-  }
-
   public boolean isInitialized() {
     return isInitialized;
   }
 
   static Context getApplicationContext() {
-    return VoiceApplicationProxy.instance.context;
+    if (instance == null) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized!");
+      return null;
+    }
+    return instance.context;
   }
 
   static Class<?> getMainActivityClass() {
-    Context context = VoiceApplicationProxy.instance.context;
+    if (instance == null) {
+      Log.e(TAG, "VoiceApplicationProxy not initialized!");
+      return null;
+    }
+    Context context = instance.context;
     String packageName = context.getPackageName();
     Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
     ComponentName componentName = Objects.requireNonNull(launchIntent).getComponent();
@@ -167,12 +222,5 @@ public class VoiceApplicationProxy {
       e.printStackTrace();
       return null;
     }
-  }
-
-  static VoiceService.VoiceServiceAPI getVoiceServiceApi() {
-    if (null == VoiceApplicationProxy.instance.voiceServiceApi) {
-      Log.e(TAG, "Voice Service not bound!");
-    }
-    return VoiceApplicationProxy.instance.voiceServiceApi;
   }
 }
