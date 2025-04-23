@@ -71,32 +71,6 @@ allprojects {
       name 'Google'
     }
     // Primary Expo Maven repositories
-    maven {
-      url "$rootDir/../node_modules/expo/maven"
-      name 'Expo Maven'
-    }
-    maven {
-      url "$rootDir/../node_modules/expo-modules-core/maven"
-      name 'Expo Modules Core Maven'
-    }
-    // Fallback to parent project's node_modules
-    maven {
-      url "${project.rootProject.projectDir}/../node_modules/expo/maven"
-      name 'Expo Maven (root)'
-    }
-    maven {
-      url "${project.rootProject.projectDir}/../node_modules/expo-modules-core/maven"
-      name 'Expo Modules Core Maven (root)'
-    }
-    // Additional fallback paths
-    maven {
-      url "$rootDir/../../../node_modules/expo-modules-core/maven"
-      name 'Expo Modules Core Maven (deep fallback)'
-    }
-    // FlatDir fallback for direct AAR access
-    flatDir {
-      dirs "${rootDir}/../node_modules/expo-modules-core/android/build/outputs/aar"
-    }
   }
 }
 
@@ -110,12 +84,6 @@ dependencies {
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   implementation 'com.google.android.material:material:1.1.0'
   
-  // Pick the version that the host app already has (set by Expo prebuild)
-  def expoCoreVersion = rootProject.ext.has('expoModulesCoreVersion')
-        ? rootProject.ext.expoModulesCoreVersion
-        : '2.0.0'           // fallback for bare RN users
-  compileOnly("expo.modules:expo-modules-core:$expoCoreVersion")
-
   constraints {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
       because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
