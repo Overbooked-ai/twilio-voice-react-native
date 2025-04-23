@@ -121,13 +121,13 @@ class ExpoModule : Module() {
         return@OnCreate
       }
 
-      // Initialize VoiceApplicationProxy
-      VoiceApplicationProxy.getInstance(reactContext)
+      // Initialize VoiceApplicationProxy first
+      VoiceApplicationProxy.getInstance(reactContext).onCreate()
 
       // Set log level for Voice SDK
       Voice.setLogLevel(LogLevel.DEBUG)
 
-      // Set up audio switch listener
+      // Now it's safe to access components
       VoiceApplicationProxy.getAudioSwitchManager()?.let { audioSwitchManager ->
         audioSwitchManager.setListener(object : AudioSwitchManager.Listener {
           override fun onAudioDeviceChanged(selectedAudioDevice: AudioDevice?) {

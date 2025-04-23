@@ -98,6 +98,10 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
     System.setProperty(SDK_VERSION, ReactNativeVoiceSDKVer);
     Voice.setLogLevel(BuildConfig.DEBUG ? LogLevel.DEBUG : LogLevel.ERROR);
 
+    // Initialize VoiceApplicationProxy first
+    VoiceApplicationProxy.getInstance(reactContext);
+
+    // Now it's safe to access components
     getJSEventEmitter().setContext(reactContext);
 
     audioSwitchManager = VoiceApplicationProxy.getAudioSwitchManager()
