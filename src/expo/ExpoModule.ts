@@ -1,5 +1,4 @@
 import { NativeModules, Platform } from 'react-native';
-import { requireNativeModule } from 'expo-modules-core';
 
 import type { CallInvite } from '../CallInvite';
 import type {
@@ -10,8 +9,8 @@ import type {
   NativeCallFeedbackScore,
   NativeCallFeedbackIssue,
   RTCStats,
-  // NativeCallMessageInfo,
-  // NativeCallState,
+  NativeCallMessageInfo,
+  NativeCallState,
 } from '../type/common';
 
 // Original Interface (Matches updated src/type/NativeModule.ts)
@@ -126,7 +125,7 @@ const RNTwilioVoice =
 let ExpoTwilioVoice: TwilioVoiceExpoModule | null = null;
 if (Platform.OS === 'android') {
   try {
-    ExpoTwilioVoice = requireNativeModule('TwilioVoiceReactNativeExpo');
+    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
   } catch (error) {
     console.error(
       'Expo module TwilioVoiceReactNativeExpo not found. Ensure you have installed the library correctly and run expo prebuild.',
@@ -390,15 +389,15 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
 // Export the wrapper as the native module implementation
 export default NativeModuleWrapper;
 
-// // Re-export the types for backward compatibility
-// export {
-//   Uuid,
-//   NativeCallInfo,
-//   NativeCallInviteInfo,
-//   NativeAudioDevicesInfo,
-//   NativeCallFeedbackScore,
-//   NativeCallFeedbackIssue,
-//   RTCStats,
-//   NativeCallMessageInfo,
-//   NativeCallState,
-// };
+// Re-export the types for backward compatibility
+export {
+  Uuid,
+  NativeCallInfo,
+  NativeCallInviteInfo,
+  NativeAudioDevicesInfo,
+  NativeCallFeedbackScore,
+  NativeCallFeedbackIssue,
+  RTCStats,
+  NativeCallMessageInfo,
+  NativeCallState,
+};
