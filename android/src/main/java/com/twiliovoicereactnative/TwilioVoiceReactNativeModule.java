@@ -101,28 +101,28 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
     System.setProperty(SDK_VERSION, ReactNativeVoiceSDKVer);
     Voice.setLogLevel(BuildConfig.DEBUG ? LogLevel.DEBUG : LogLevel.ERROR);
 
-    // Initialize VoiceApplicationProxy - this will also call onCreate()
-    VoiceApplicationProxy.getInstance(reactContext);
+    // Create JSEventEmitter first
+    this.jsEventEmitter = new JSEventEmitter();
+    this.jsEventEmitter.setContext(reactContext);
 
-    // Initialize JSEventEmitter
-    this.jsEventEmitter = VoiceApplicationProxy.getJSEventEmitter();
-    if (this.jsEventEmitter != null) {
-      this.jsEventEmitter.setContext(reactContext);
-    } else {
-      logger.error("Failed to get JSEventEmitter from VoiceApplicationProxy");
-    }
+    // Initialize VoiceApplicationProxy - this will also call onCreate()
+    VoiceApplicationProxy proxy = VoiceApplicationProxy.getInstance(reactContext);
+    proxy.setJSEventEmitter(this.jsEventEmitter);
+
+    // Initialize AudioSwitchManager
+    this.audioSwitchManager = new AudioSwitchManager(reactContext);
+    proxy.setAudioSwitchManager(this.audioSwitchManager);
 
     // Set up audio switch listener
-    audioSwitchManager = VoiceApplicationProxy.getAudioSwitchManager()
-      .setListener((audioDevices, selectedDeviceUuid, selectedDevice) -> {
-        WritableMap audioDeviceInfo = serializeAudioDeviceInfo(
-          audioDevices,
-          selectedDeviceUuid,
-          selectedDevice
-        );
-        audioDeviceInfo.putString(VoiceEventType, VoiceEventAudioDevicesUpdated);
-        sendJSEvent(audioDeviceInfo);
-      });
+    this.audioSwitchManager.setListener((audioDevices, selectedDeviceUuid, selectedDevice) -> {
+      WritableMap audioDeviceInfo = serializeAudioDeviceInfo(
+        audioDevices,
+        selectedDeviceUuid,
+        selectedDevice
+      );
+      audioDeviceInfo.putString(VoiceEventType, VoiceEventAudioDevicesUpdated);
+      sendJSEvent(audioDeviceInfo);
+    });
   }
 
   @Override

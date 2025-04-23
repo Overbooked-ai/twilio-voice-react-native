@@ -113,7 +113,7 @@ public class VoiceApplicationProxy {
   }
 
   public static synchronized AudioSwitchManager getAudioSwitchManager() {
-    return getInstance().getAudioSwitchManagerInstance();
+    return getInstance().audioSwitchManager;
   }
 
   public static synchronized MediaPlayerManager getMediaPlayerManager() {
@@ -121,7 +121,7 @@ public class VoiceApplicationProxy {
   }
 
   public static synchronized JSEventEmitter getJSEventEmitter() {
-    return getInstance().getJSEventEmitterInstance();
+    return getInstance().jsEventEmitter;
   }
 
   // Alias for backward compatibility
@@ -174,6 +174,12 @@ public class VoiceApplicationProxy {
     return voiceServiceApi;
   }
 
+  public void setAudioSwitchManager(AudioSwitchManager manager) {
+    synchronized (lock) {
+      this.audioSwitchManager = manager;
+    }
+  }
+
   private void initialize() {
     if (isInitialized) {
       return;
@@ -182,7 +188,6 @@ public class VoiceApplicationProxy {
     // Initialize components in order
     jsEventEmitter = new JSEventEmitter();
     callRecordDatabase = new CallRecordDatabase();
-    audioSwitchManager = new AudioSwitchManager(context);
     mediaPlayerManager = new MediaPlayerManager(context);
     
     isInitialized = true;
@@ -198,8 +203,9 @@ public class VoiceApplicationProxy {
     initialize();
 
     // Initialize components in order
-    audioSwitchManager.start();
-    // No need to call play() or start() here since it should be called with specific sounds when needed
+    if (audioSwitchManager != null) {
+      audioSwitchManager.start();
+    }
 
     // Bind to voice service
     context.bindService(
@@ -223,7 +229,9 @@ public class VoiceApplicationProxy {
 
     // Stop components in reverse order
     mediaPlayerManager.stop();
-    audioSwitchManager.stop();
+    if (audioSwitchManager != null) {
+      audioSwitchManager.stop();
+    }
 
     // Clean up notification channels
     NotificationUtility.destroyNotificationChannels(context);
@@ -267,6 +275,12 @@ public class VoiceApplicationProxy {
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
       return null;
+    }
+  }
+
+  public void setJSEventEmitter(JSEventEmitter emitter) {
+    synchronized (lock) {
+      this.jsEventEmitter = emitter;
     }
   }
 }
