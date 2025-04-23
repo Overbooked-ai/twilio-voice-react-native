@@ -18,13 +18,13 @@ import type {
   NativeCallInviteAcceptedEvent,
   NativeCallInviteCancelledEvent,
   NativeCallInviteMessageReceivedEvent,
+  NativeCallInfo,
 } from './type';
 import type { CustomParameters, Uuid } from './type';
 import { CallMessage, validateCallMessage } from './CallMessage/CallMessage';
 import { IncomingCallMessage } from './CallMessage/IncomingCallMessage';
 import { OutgoingCallMessage } from './CallMessage/OutgoingCallMessage';
 import { Constants } from './constants';
-import { NativeCallInfo } from './type';
 
 /**
  * Defines strict typings for all events emitted by {@link (CallInvite:class)
@@ -395,8 +395,6 @@ export class CallInvite extends EventEmitter {
       to: this._to,
       isMuted: false,
       isOnHold: false,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
       state: Call.State.Connecting,
     };
     const call = new Call(callInfo);

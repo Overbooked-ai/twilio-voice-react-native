@@ -1,7 +1,7 @@
 import type { Constants } from '../constants';
 import type { NativeErrorInfo } from './Error';
 import type { NativeCallMessageInfo } from './CallMessage';
-import type { NativeCallInfo } from './common';
+import { NativeCallInfo } from './common';
 
 export interface NativeCallConnectedEvent {
   type: Constants.CallEventConnected;

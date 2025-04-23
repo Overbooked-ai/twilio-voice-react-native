@@ -3,8 +3,8 @@
  * @public
  */
 
-import type { Constants } from '../../lib/constants';
-import type { Call } from '../../lib';
+import { Constants } from '../constants';
+import { Call } from '../Call';
 
 /**
  * Call custom parameters. If custom parameters are present for a call, then
