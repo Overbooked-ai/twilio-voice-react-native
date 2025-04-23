@@ -124,6 +124,11 @@ public class VoiceApplicationProxy {
     return getInstance().getJSEventEmitterInstance();
   }
 
+  // Alias for backward compatibility
+  public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceAPI() {
+    return getVoiceServiceApi();
+  }
+
   public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceApi() {
     return getInstance().getVoiceServiceAPIInstance();
   }
