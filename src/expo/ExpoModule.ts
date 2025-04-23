@@ -85,8 +85,8 @@ interface TwilioVoiceExpoModule {
   getCallInvites(): Promise<NativeCallInviteInfo[]>;
   getAudioDevices(): Promise<NativeAudioDevicesInfo>;
   selectAudioDevice(uuid: Uuid): Promise<void>;
-  register(accessToken: string, fcmToken: string): Promise<void>;
-  unregister(accessToken: string, fcmToken: string): Promise<void>;
+  register(accessToken: string): Promise<void>;
+  unregister(accessToken: string): Promise<void>;
   handleEvent(remoteMessage: Record<string, string>): Promise<boolean>;
   call_disconnect(callUuid: Uuid): Promise<void>;
   call_getStats(callUuid: Uuid): Promise<RTCStats.StatsReport>;
@@ -351,11 +351,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
       default: () => Promise.reject(false),
     })!(),
   voice_register: (token: string): Promise<void> => {
-    if (Platform.OS === 'android') {
-      return ExpoTwilioVoice!.register(token);
-    } else {
-      return RNTwilioVoice.voice_register(token);
-    }
+    return RNTwilioVoice.voice_register(token);
   },
   voice_selectAudioDevice: (uuid: Uuid): Promise<void> =>
     Platform.select({
@@ -371,11 +367,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
     }
   },
   voice_unregister: (token: string): Promise<void> => {
-    if (Platform.OS === 'android') {
-      return ExpoTwilioVoice!.unregister(token);
-    } else {
-      return RNTwilioVoice.voice_unregister(token);
-    }
+    return RNTwilioVoice.voice_unregister(token);
   },
 };
 

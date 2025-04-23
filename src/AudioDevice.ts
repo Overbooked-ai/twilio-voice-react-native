@@ -1,8 +1,8 @@
 import { EventEmitter } from 'eventemitter3';
 import { NativeModule } from './common';
-import { TwilioError } from './error/TwilioError';
-import type { NativeAudioDeviceInfo } from './type/AudioDevice';
-import type { Uuid, NativeAudioDeviceType } from './type/common';
+import { TwilioError } from './error';
+import type { NativeAudioDeviceInfo } from './type';
+import { NativeAudioDeviceType, Uuid } from './type';
 
 export enum Type {
   Earpiece = 'earpiece',

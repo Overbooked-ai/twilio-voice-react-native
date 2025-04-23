@@ -23,23 +23,11 @@ export type CustomParameters = Record<string, string>;
 
 export type Uuid = string;
 
-export enum NativeCallFeedbackIssue {
-  AudioLatency = 'audio-latency',
-  ChoppyAudio = 'choppy-audio',
-  DroppedCall = 'dropped-call',
-  Echo = 'echo',
-  NoisyCall = 'noisy-call',
-  NotReported = 'not-reported',
-  OneWayAudio = 'one-way-audio',
-}
-
-export enum NativeCallFeedbackScore {
-  NotReported = 0,
-  One = 1,
-  Two = 2,
-  Three = 3,
-  Four = 4,
-  Five = 5,
+export declare enum NativeAudioDeviceType {
+  Earpiece = 'earpiece',
+  Speaker = 'speaker',
+  Bluetooth = 'bluetooth',
+  WiredHeadset = 'wired_headset',
 }
 
 export interface NativeCallInfo {

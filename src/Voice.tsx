@@ -15,7 +15,7 @@ import { InvalidArgumentError } from './error';
 import type { TwilioError } from './error';
 import { UnsupportedPlatformError } from './error';
 import { constructTwilioError } from './error/utility';
-import type { NativeAudioDeviceInfo } from './type';
+import type { NativeAudioDeviceInfo, NativeCallInfo } from './type';
 import type { NativeCallInviteInfo } from './type';
 import type { CallKit } from './type';
 import type { CustomParameters, Uuid } from './type';
@@ -617,29 +617,21 @@ export class Voice extends EventEmitter {
   }
 
   /**
-   * Register this device for incoming calls.
-   * @param token - A Twilio Access Token.
-   * @param fcmToken - (Android Only) The FCM token obtained via a library like expo-notifications.
-   *                   Required on Android, ignored on iOS.
-   * @returns
-   * A `Promise` that
-   *  - Resolves when the device has been registered.
+   * Register the device with Twilio Voice.
+   *
+   * @param token - The access token obtained from your server.
    */
-  register(token: string, fcmToken?: string): Promise<void> {
-    return NativeModule.voice_register(token, fcmToken);
+  register(token: string): Promise<void> {
+    return NativeModule.voice_register(token);
   }
 
   /**
-   * Unregister this device for incoming calls.
-   * @param token - A Twilio Access Token.
-   * @param fcmToken - (Android Only) The FCM token obtained via a library like expo-notifications.
-   *                   Required on Android, ignored on iOS.
-   * @returns
-   * A `Promise` that
-   *  - Resolves when the device has been unregistered.
+   * Unregister the device from Twilio Voice.
+   *
+   * @param token - The access token obtained from your server.
    */
-  unregister(token: string, fcmToken?: string): Promise<void> {
-    return NativeModule.voice_unregister(token, fcmToken);
+  unregister(token: string): Promise<void> {
+    return NativeModule.voice_unregister(token);
   }
 
   /**

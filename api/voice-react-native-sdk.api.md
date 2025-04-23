@@ -4,33 +4,26 @@
 
 ```ts
 
+import type { Call as Call_2 } from '../../lib';
+import type { Constants } from '../../lib/constants';
 import { EventEmitter } from 'eventemitter3';
 
-// @public
-export class AudioDevice {
+// @public (undocumented)
+export class AudioDevice extends EventEmitter {
     // Warning: (ae-forgotten-export) The symbol "NativeAudioDeviceInfo" needs to be exported by the entry point index.d.ts
-    //
-    // @internal
     constructor({ uuid, type, name }: NativeAudioDeviceInfo);
-    name: string;
+    // (undocumented)
+    get name(): string;
+    // (undocumented)
     select(): Promise<void>;
-    type: AudioDevice.Type;
+    // Warning: (ae-forgotten-export) The symbol "NativeAudioDeviceType" needs to be exported by the entry point index.d.ts
+    //
+    // (undocumented)
+    get type(): NativeAudioDeviceType;
     // Warning: (ae-forgotten-export) The symbol "Uuid" needs to be exported by the entry point index.d.ts
     //
-    // @internal
-    uuid: Uuid;
-}
-
-// @public
-export namespace AudioDevice {
-    export enum Type {
-        // (undocumented)
-        Bluetooth = "bluetooth",
-        // (undocumented)
-        Earpiece = "earpiece",
-        // (undocumented)
-        Speaker = "speaker"
-    }
+    // (undocumented)
+    get uuid(): Uuid;
 }
 
 // @public
@@ -243,7 +236,7 @@ export namespace Call {
         export type Connected = () => void;
         export type ConnectFailure = (error: TwilioError) => void;
         export type Disconnected = (error?: TwilioError) => void;
-        export type Generic = (...args: any[]) => void;
+        export type Generic = (...args: unknown[]) => void;
         export type MessageReceived = (incomingCallMessage: IncomingCallMessage) => void;
         export type QualityWarningsChanged = (currentQualityWarnings: Call.QualityWarning[], previousQualityWarnings: Call.QualityWarning[]) => void;
         export type Reconnected = () => void;
@@ -992,7 +985,7 @@ export interface Voice {
     // @internal (undocumented)
     emit(voiceEvent: Voice.Event.Unregistered): boolean;
     // @internal (undocumented)
-    emit(voiceEvent: Voice.Event, ...args: any[]): boolean;
+    emit(voiceEvent: Voice.Event, ...args: unknown[]): boolean;
     on(audioDevicesUpdatedEvent: Voice.Event.AudioDevicesUpdated, listener: Voice.Listener.AudioDevicesUpdated): this;
     on(callInviteEvent: Voice.Event.CallInvite, listener: Voice.Listener.CallInvite): this;
     on(errorEvent: Voice.Event.Error, listener: Voice.Listener.Error): this;
@@ -1010,7 +1003,7 @@ export class Voice extends EventEmitter {
         selectedDevice?: AudioDevice;
     }>;
     getCallInvites(): Promise<ReadonlyMap<Uuid, CallInvite>>;
-    getCalls(): Promise<ReadonlyMap<Uuid, Call>>;
+    getCalls(): Promise<Map<Uuid, Call>>;
     getDeviceToken(): Promise<string>;
     getVersion(): Promise<string>;
     handleFirebaseMessage(remoteMessage: Record<string, string>): Promise<boolean>;
@@ -1040,7 +1033,7 @@ export namespace Voice {
         export type AudioDevicesUpdated = (audioDevices: AudioDevice[], selectedDevice?: AudioDevice) => void;
         export type CallInvite = (callInvite: CallInvite) => void;
         export type Error = (error: TwilioError) => void;
-        export type Generic = (...args: any[]) => void;
+        export type Generic = (...args: unknown[]) => void;
         export type Registered = () => void;
         export type Unregistered = () => void;
     }
