@@ -100,6 +100,7 @@ public class VoiceApplicationProxy {
     synchronized (lock) {
       if (instance == null) {
         instance = new VoiceApplicationProxy(context);
+        instance.onCreate(); // Initialize immediately after creation
       }
       return instance;
     }
@@ -164,14 +165,18 @@ public class VoiceApplicationProxy {
       return;
     }
     Log.d(TAG, "Initializing VoiceApplicationProxy");
+    
+    // Initialize components in order
     audioSwitchManager.start();
-    // MediaPlayerManager doesn't need initialization, it's ready to use after construction
-    isInitialized = true;
-    // launch and bind to voice call service
+    mediaPlayerManager.start();
+    
+    // Bind to voice service
     context.bindService(
       new Intent(context, VoiceService.class),
       voiceServiceObserver,
       Context.BIND_AUTO_CREATE);
+      
+    isInitialized = true;
   }
 
   public void onTerminate() {
@@ -179,11 +184,22 @@ public class VoiceApplicationProxy {
       return;
     }
     Log.d(TAG, "Terminating VoiceApplicationProxy");
-    audioSwitchManager.stop();
+    
+    // Unbind service first
+    try {
+      context.unbindService(voiceServiceObserver);
+    } catch (IllegalArgumentException e) {
+      Log.w(TAG, "Service was not bound", e);
+    }
+    
+    // Stop components in reverse order
     mediaPlayerManager.stop();
-    // shutdown notificaiton channels
+    audioSwitchManager.stop();
+    
+    // Clean up notification channels
     NotificationUtility.destroyNotificationChannels(context);
-    // verify that no call records are leaked
+    
+    // Verify no call records are leaked
     for (CallRecord callRecord: callRecordDatabase.getCollection()) {
       Log.w(TAG,
         String.format(
@@ -192,6 +208,7 @@ public class VoiceApplicationProxy {
           (null != callRecord.getCallSid()) ? callRecord.getCallSid() : "null"));
     }
     callRecordDatabase.clear();
+    
     isInitialized = false;
   }
 

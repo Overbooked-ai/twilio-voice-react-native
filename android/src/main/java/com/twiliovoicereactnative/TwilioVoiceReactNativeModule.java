@@ -94,16 +94,19 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
 
     logger.log("instantiation of TwilioVoiceReactNativeModule");
     this.reactContext = reactContext;
+    
+    // Set system properties
     System.setProperty(GLOBAL_ENV, ReactNativeVoiceSDK);
     System.setProperty(SDK_VERSION, ReactNativeVoiceSDKVer);
     Voice.setLogLevel(BuildConfig.DEBUG ? LogLevel.DEBUG : LogLevel.ERROR);
 
-    // Initialize VoiceApplicationProxy first
+    // Initialize VoiceApplicationProxy - this will also call onCreate()
     VoiceApplicationProxy.getInstance(reactContext);
 
     // Now it's safe to access components
     getJSEventEmitter().setContext(reactContext);
 
+    // Set up audio switch listener
     audioSwitchManager = VoiceApplicationProxy.getAudioSwitchManager()
       .setListener((audioDevices, selectedDeviceUuid, selectedDevice) -> {
         WritableMap audioDeviceInfo = serializeAudioDeviceInfo(
@@ -114,6 +117,13 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
         audioDeviceInfo.putString(VoiceEventType, VoiceEventAudioDevicesUpdated);
         getJSEventEmitter().sendEvent(ScopeVoice, audioDeviceInfo);
       });
+  }
+
+  @Override
+  public void onCatalystInstanceDestroy() {
+    super.onCatalystInstanceDestroy();
+    // Clean up when the module is destroyed
+    VoiceApplicationProxy.getInstance().onTerminate();
   }
 
   /**

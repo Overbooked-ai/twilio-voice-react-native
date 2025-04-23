@@ -121,8 +121,8 @@ class ExpoModule : Module() {
         return@OnCreate
       }
 
-      // Initialize VoiceApplicationProxy first
-      VoiceApplicationProxy.getInstance(reactContext).onCreate()
+      // Initialize VoiceApplicationProxy - this will also call onCreate()
+      VoiceApplicationProxy.getInstance(reactContext)
 
       // Set log level for Voice SDK
       Voice.setLogLevel(LogLevel.DEBUG)
