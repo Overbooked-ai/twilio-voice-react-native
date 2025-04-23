@@ -123,13 +123,13 @@ const RNTwilioVoice =
 let ExpoTwilioVoice: TwilioVoiceExpoModule | null = null;
 if (Platform.OS === 'android') {
   try {
-    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
+    ExpoTwilioVoice = NativeModules["com.twiliovoicereactnative.expo.ExpoModule"] as TwilioVoiceExpoModule;
     if (!ExpoTwilioVoice) {
-      throw new Error('TwilioVoiceReactNativeExpo module is null');
+      throw new Error('Expo module is null');
     }
   } catch (error) {
     console.error(
-      'Expo module TwilioVoiceReactNativeExpo not found. Ensure you have installed the library correctly and run expo prebuild.',
+      'Expo module not found. Ensure you have installed the library correctly and run expo prebuild.',
       error
     );
     // Don't fall back to regular React Native module, as we're using Expo

@@ -9,14 +9,7 @@ import * as ReactNative from 'react-native';
 import type { TwilioVoiceReactNative as TwilioVoiceReactNativeType } from './type/NativeModule';
 import NativeModuleWrapper from './expo/ExpoModule';
 
-const SelectedNativeModule =
-  ReactNative.Platform.OS === 'android'
-    ? NativeModuleWrapper
-    : (ReactNative.NativeModules
-        .TwilioVoiceReactNative as TwilioVoiceReactNativeType);
-
-export const NativeModule = SelectedNativeModule;
-export const NativeEventEmitter = new ReactNative.NativeEventEmitter(
-  SelectedNativeModule
-);
+// Use the Expo module wrapper which handles both platforms
+export const NativeModule = NativeModuleWrapper;
+export const NativeEventEmitter = new ReactNative.NativeEventEmitter(NativeModuleWrapper);
 export const Platform = ReactNative.Platform;
