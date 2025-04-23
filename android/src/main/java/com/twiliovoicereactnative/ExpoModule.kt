@@ -10,7 +10,7 @@ class ExpoModule : Module() {
   private var voiceApplicationProxy: VoiceApplicationProxy? = null
 
   override fun definition() = ModuleDefinition {
-    Name("ExpoTwilioVoice")
+    Name("TwilioVoiceReactNativeExpo")
 
     OnCreate {
       val context = appContext.reactContext ?: return@OnCreate
