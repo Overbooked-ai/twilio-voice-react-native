@@ -619,7 +619,7 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
           }
 
           // Log and toast
-          logger.debug("Registering with FCM with token " + fcmToken);
+          logger.debug("Unregistering with FCM with token " + fcmToken);
           UnregistrationListener unregistrationListener = createUnregistrationListener(promise);
           Voice.unregister(token, Voice.RegistrationChannel.FCM, fcmToken, unregistrationListener);
         });

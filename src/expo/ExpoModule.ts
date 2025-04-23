@@ -350,11 +350,9 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
       ios: () => RNTwilioVoice.voice_handleEvent(message),
       default: () => Promise.reject(false),
     })!(),
-  voice_register: (token: string, fcmToken?: string): Promise<void> => {
+  voice_register: (token: string): Promise<void> => {
     if (Platform.OS === 'android') {
-      if (!fcmToken)
-        return Promise.reject('FCM token required for registration on Android');
-      return ExpoTwilioVoice!.register(token, fcmToken);
+      return ExpoTwilioVoice!.register(token);
     } else {
       return RNTwilioVoice.voice_register(token);
     }
@@ -372,13 +370,9 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
       return Promise.resolve();
     }
   },
-  voice_unregister: (token: string, fcmToken?: string): Promise<void> => {
+  voice_unregister: (token: string): Promise<void> => {
     if (Platform.OS === 'android') {
-      if (!fcmToken)
-        return Promise.reject(
-          'FCM token required for unregistration on Android'
-        );
-      return ExpoTwilioVoice!.unregister(token, fcmToken);
+      return ExpoTwilioVoice!.unregister(token);
     } else {
       return RNTwilioVoice.voice_unregister(token);
     }

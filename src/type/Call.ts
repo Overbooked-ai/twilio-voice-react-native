@@ -1,9 +1,7 @@
 import type { Constants } from '../constants';
 import type { NativeErrorInfo } from './Error';
 import type { NativeCallMessageInfo } from './CallMessage';
-import type {
-  NativeCallInfo,
-} from './common';
+import type { NativeCallInfo } from './common';
 
 export interface NativeCallConnectedEvent {
   type: Constants.CallEventConnected;
@@ -73,11 +71,19 @@ export type NativeCallEventType =
   | Constants.CallEventRinging
   | Constants.CallEventMessageReceived;
 
-// // Re-export the types for backward compatibility
-// export {
-//   NativeCallInfo,
-//   NativeCallState,
-//   NativeCallFeedbackIssue,
-//   NativeCallFeedbackScore,
-//   NativeCallQualityWarning,
-// };
+export type NativeCallFeedbackIssue =
+  | Constants.CallFeedbackIssueAudioLatency
+  | Constants.CallFeedbackIssueChoppyAudio
+  | Constants.CallFeedbackIssueDroppedCall
+  | Constants.CallFeedbackIssueEcho
+  | Constants.CallFeedbackIssueNoisyCall
+  | Constants.CallFeedbackIssueNotReported
+  | Constants.CallFeedbackIssueOneWayAudio;
+
+export type NativeCallFeedbackScore =
+  | Constants.CallFeedbackScoreNotReported
+  | Constants.CallFeedbackScoreOne
+  | Constants.CallFeedbackScoreTwo
+  | Constants.CallFeedbackScoreThree
+  | Constants.CallFeedbackScoreFour
+  | Constants.CallFeedbackScoreFive;

@@ -1,4 +1,12 @@
 /**
+ * Common types used across the Twilio Voice React Native SDK
+ * @public
+ */
+
+import type { Constants } from '../../lib/constants';
+import type { Call } from '../../lib';
+
+/**
  * Call custom parameters. If custom parameters are present for a call, then
  * it will have this typing.
  *
@@ -11,19 +19,9 @@
  *
  * @public
  */
-export type CustomParameters = { [key: string]: string };
+export type CustomParameters = Record<string, string>;
 
 export type Uuid = string;
-
-// Call Feedback types
-export enum NativeCallFeedbackScore {
-  NotReported = 0,
-  One = 1,
-  Two = 2,
-  Three = 3,
-  Four = 4,
-  Five = 5,
-}
 
 export enum NativeCallFeedbackIssue {
   AudioLatency = 'audio-latency',
@@ -35,76 +33,23 @@ export enum NativeCallFeedbackIssue {
   OneWayAudio = 'one-way-audio',
 }
 
-// Call State types
-export enum NativeCallState {
-  Connected = 'connected',
-  Connecting = 'connecting',
-  Disconnected = 'disconnected',
-  Ringing = 'ringing',
-  Reconnecting = 'reconnecting',
+export enum NativeCallFeedbackScore {
+  NotReported = 0,
+  One = 1,
+  Two = 2,
+  Three = 3,
+  Four = 4,
+  Five = 5,
 }
 
-// Audio Device types
-export enum NativeAudioDeviceType {
-  Earpiece = 'earpiece',
-  Speaker = 'speaker',
-  Bluetooth = 'bluetooth',
-  WiredHeadset = 'wired_headset',
-}
-
-export interface NativeAudioDeviceInfo {
-  uuid: Uuid;
-  type: NativeAudioDeviceType;
-  name: string;
-}
-
-export interface NativeAudioDevicesInfo {
-  selectedDevice?: NativeAudioDeviceInfo;
-  audioDevices: NativeAudioDeviceInfo[];
-}
-
-// Call Info types
 export interface NativeCallInfo {
   uuid: Uuid;
-  customParameters: CustomParameters;
-  from: string;
-  isMuted: boolean;
-  isOnHold: boolean;
-  state: NativeCallState;
-  to: string;
-  sid: string;
-  initialConnectedTimestamp?: number;
-  fromDisplayName?: string;
-  toDisplayName?: string;
-  callQualityWarnings?: string[];
-  callFeedbackIssues?: NativeCallFeedbackIssue[];
-  callFeedbackScore?: NativeCallFeedbackScore;
-  voiceEventSid?: string;
+  customParameters?: CustomParameters;
+  from?: string;
+  [Constants.CallInfoInitialConnectedTimestamp]?: string;
+  isMuted?: boolean;
+  isOnHold?: boolean;
+  sid?: string;
+  state?: Call.State;
+  to?: string;
 }
-
-// Call Invite types
-export interface NativeCallInviteInfo {
-  uuid: Uuid;
-  callSid: string;
-  customParameters: CustomParameters;
-  to: string;
-  from: string;
-}
-
-// RTC Stats types
-// eslint-disable-next-line @typescript-eslint/no-namespace
-export declare namespace RTCStats {
-  export type StatsReport = Record<string, unknown>;
-}
-
-// Call Message types
-export interface NativeCallMessageInfo {
-  sid: string;
-  messageType: string;
-  contentType: string;
-  content: string;
-  voiceEventSid?: string;
-}
-
-// Quality Warnings type
-export type NativeCallQualityWarning = string;

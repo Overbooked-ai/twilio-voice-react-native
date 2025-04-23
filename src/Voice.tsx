@@ -16,7 +16,6 @@ import type { TwilioError } from './error';
 import { UnsupportedPlatformError } from './error';
 import { constructTwilioError } from './error/utility';
 import type { NativeAudioDeviceInfo } from './type';
-import type { NativeCallInfo } from './type';
 import type { NativeCallInviteInfo } from './type';
 import type { CallKit } from './type';
 import type { CustomParameters, Uuid } from './type';
@@ -368,8 +367,6 @@ export class Voice extends EventEmitter {
 
     const { callInvite: callInviteInfo } = nativeVoiceEvent;
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
     const callInvite = new CallInvite(callInviteInfo, CallInvite.State.Pending);
 
     this.emit(Voice.Event.CallInvite, callInvite);
@@ -579,8 +576,6 @@ export class Voice extends EventEmitter {
   async getCallInvites(): Promise<ReadonlyMap<Uuid, CallInvite>> {
     const callInviteInfos = await NativeModule.voice_getCallInvites();
     const callInvitesMap = new Map<Uuid, CallInvite>(
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
       callInviteInfos.map((callInviteInfo: NativeCallInviteInfo) => [
         callInviteInfo.uuid,
         new CallInvite(callInviteInfo, CallInvite.State.Pending),

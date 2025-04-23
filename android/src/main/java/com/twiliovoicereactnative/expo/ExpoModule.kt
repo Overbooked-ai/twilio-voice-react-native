@@ -229,20 +229,40 @@ class ExpoModule : Module() {
     }
 
     // Combined register function (assuming fcmToken is always required on Android)
-    AsyncFunction("register") { accessToken: String, fcmToken: String, promise: Promise ->
-        logger.debug("register called (Expo) with FCM Token")
+    AsyncFunction("register") { accessToken: String, promise: Promise ->
+        logger.debug("register called (Expo)")
         mainHandler.post {
-            val registrationListener = createRegistrationListener(promise)
-            Voice.register(accessToken, Voice.RegistrationChannel.FCM, fcmToken, registrationListener)
+            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful || task.result == null) {
+                    val errorMsg = "Fetching FCM registration token failed: ${task.exception?.message}"
+                    logger.warning(errorMsg)
+                    promise.reject(CodedException("E_FCM_TOKEN", errorMsg, task.exception))
+                    return@addOnCompleteListener
+                }
+
+                val fcmToken = task.result
+                val registrationListener = createRegistrationListener(promise)
+                Voice.register(accessToken, Voice.RegistrationChannel.FCM, fcmToken, registrationListener)
+            }
         }
     }
 
     // Combined unregister function
-    AsyncFunction("unregister") { accessToken: String, fcmToken: String, promise: Promise ->
-        logger.debug("unregister called (Expo) with FCM Token")
+    AsyncFunction("unregister") { accessToken: String, promise: Promise ->
+        logger.debug("unregister called (Expo)")
         mainHandler.post {
-           val unregistrationListener = createUnregistrationListener(promise)
-           Voice.unregister(accessToken, Voice.RegistrationChannel.FCM, fcmToken, unregistrationListener)
+            FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                if (!task.isSuccessful || task.result == null) {
+                    val errorMsg = "Fetching FCM registration token failed: ${task.exception?.message}"
+                    logger.warning(errorMsg)
+                    promise.reject(CodedException("E_FCM_TOKEN", errorMsg, task.exception))
+                    return@addOnCompleteListener
+                }
+
+                val fcmToken = task.result
+                val unregistrationListener = createUnregistrationListener(promise)
+                Voice.unregister(accessToken, Voice.RegistrationChannel.FCM, fcmToken, unregistrationListener)
+            }
         }
     }
 

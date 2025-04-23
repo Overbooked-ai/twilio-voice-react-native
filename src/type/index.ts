@@ -16,3 +16,4 @@ export * from './RTCStats';
 export * from './Error';
 export * from './NativeModule';
 export * from './Voice';
+export { NativeCallFeedbackScore } from './nativeCallFeedbackScore';
