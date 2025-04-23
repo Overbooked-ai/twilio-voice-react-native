@@ -120,12 +120,12 @@ const RNTwilioVoice =
   NativeModules.TwilioVoiceReactNative as TwilioVoiceReactNative;
 
 // Load the Expo module for Android
-let ExpoTwilioVoice: TwilioVoiceExpoModule | null = null;
+let TwilioVoiceReactNativeExpo: TwilioVoiceExpoModule | null = null;
 if (Platform.OS === 'android') {
   try {
-    ExpoTwilioVoice =
+    TwilioVoiceReactNativeExpo =
       NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
-    if (!ExpoTwilioVoice) {
+    if (!TwilioVoiceReactNativeExpo) {
       throw new Error('TwilioVoiceReactNativeExpo module is null');
     }
   } catch (error) {
@@ -134,7 +134,7 @@ if (Platform.OS === 'android') {
       error
     );
     // Fall back to regular React Native module on Android if Expo module is not available
-    ExpoTwilioVoice =
+    TwilioVoiceReactNativeExpo =
       NativeModules.TwilioVoiceReactNative as unknown as TwilioVoiceExpoModule;
   }
 }
@@ -143,15 +143,15 @@ if (Platform.OS === 'android') {
 // Implements the unified TwilioVoiceReactNative interface
 const NativeModuleWrapper: TwilioVoiceReactNative = {
   addListener: (eventName: string) => {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      ExpoTwilioVoice.addListener(eventName);
+    if (Platform.OS === 'android' && TwilioVoiceReactNativeExpo) {
+      TwilioVoiceReactNativeExpo.addListener(eventName);
     } else {
       RNTwilioVoice.addListener(eventName);
     }
   },
   removeListeners: (count: number) => {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      ExpoTwilioVoice.removeListeners(count);
+    if (Platform.OS === 'android' && TwilioVoiceReactNativeExpo) {
+      TwilioVoiceReactNativeExpo.removeListeners(count);
     } else {
       RNTwilioVoice.removeListeners(count);
     }
@@ -160,37 +160,37 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   // Call methods
   call_disconnect: (uuid: Uuid): Promise<void> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_disconnect(uuid),
+      android: () => TwilioVoiceReactNativeExpo!.call_disconnect(uuid),
       ios: () => RNTwilioVoice.call_disconnect(uuid),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   call_getStats: (uuid: Uuid): Promise<RTCStats.StatsReport> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_getStats(uuid),
+      android: () => TwilioVoiceReactNativeExpo!.call_getStats(uuid),
       ios: () => RNTwilioVoice.call_getStats(uuid),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   call_hold: (uuid: Uuid, hold: boolean): Promise<boolean> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_hold(uuid, hold),
+      android: () => TwilioVoiceReactNativeExpo!.call_hold(uuid, hold),
       ios: () => RNTwilioVoice.call_hold(uuid, hold),
       default: () => Promise.reject(false),
     })!(),
   call_isOnHold: (uuid: Uuid): Promise<boolean> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_isOnHold(uuid),
+      android: () => TwilioVoiceReactNativeExpo!.call_isOnHold(uuid),
       ios: () => RNTwilioVoice.call_isOnHold(uuid),
       default: () => Promise.reject(false),
     })!(),
   call_isMuted: (uuid: Uuid): Promise<boolean> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_isMuted(uuid),
+      android: () => TwilioVoiceReactNativeExpo!.call_isMuted(uuid),
       ios: () => RNTwilioVoice.call_isMuted(uuid),
       default: () => Promise.reject(false),
     })!(),
   call_mute: (uuid: Uuid, mute: boolean): Promise<boolean> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_mute(uuid, mute),
+      android: () => TwilioVoiceReactNativeExpo!.call_mute(uuid, mute),
       ios: () => RNTwilioVoice.call_mute(uuid, mute),
       default: () => Promise.reject(false),
     })!(),
@@ -201,7 +201,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   ): Promise<void> =>
     Platform.select({
       android: () =>
-        ExpoTwilioVoice!.call_postFeedback(uuid, String(score), String(issue)),
+        TwilioVoiceReactNativeExpo!.call_postFeedback(uuid, String(score), String(issue)),
       ios: () =>
         RNTwilioVoice.call_postFeedback(
           uuid,
@@ -212,7 +212,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
     })!(),
   call_sendDigits: (uuid: Uuid, digits: string): Promise<void> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.call_sendDigits(uuid, digits),
+      android: () => TwilioVoiceReactNativeExpo!.call_sendDigits(uuid, digits),
       ios: () => RNTwilioVoice.call_sendDigits(uuid, digits),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
@@ -224,7 +224,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   ): Promise<string> =>
     Platform.select({
       android: () =>
-        ExpoTwilioVoice!.call_sendMessage(
+        TwilioVoiceReactNativeExpo!.call_sendMessage(
           uuid,
           content,
           contentType,
@@ -242,7 +242,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   ): Promise<NativeCallInfo> =>
     Platform.select({
       android: () =>
-        ExpoTwilioVoice!.callInvite_accept(
+        TwilioVoiceReactNativeExpo!.callInvite_accept(
           uuid,
           options as Record<string, unknown>
         ),
@@ -255,7 +255,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   },
   callInvite_reject: (uuid: Uuid): Promise<void> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.callInvite_reject(uuid),
+      android: () => TwilioVoiceReactNativeExpo!.callInvite_reject(uuid),
       ios: () => RNTwilioVoice.callInvite_reject(uuid),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
@@ -273,11 +273,11 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
     params: Record<string, unknown>,
     displayName: string | undefined
   ): Promise<NativeCallInfo> => {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      if (!ExpoTwilioVoice) {
-        throw new Error('ExpoTwilioVoice undefined, weird state');
+    if (Platform.OS === 'android' && TwilioVoiceReactNativeExpo) {
+      if (!TwilioVoiceReactNativeExpo) {
+        throw new Error('TwilioVoiceReactNativeExpo undefined, weird state');
       }
-      return ExpoTwilioVoice.connect(token, {
+      return TwilioVoiceReactNativeExpo.connect(token, {
         params,
         notificationDisplayName: displayName,
       });
@@ -325,39 +325,39 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   },
   voice_getAudioDevices: (): Promise<NativeAudioDevicesInfo> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.getAudioDevices(),
+      android: () => TwilioVoiceReactNativeExpo!.getAudioDevices(),
       ios: () => RNTwilioVoice.voice_getAudioDevices(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   voice_getCalls: (): Promise<NativeCallInfo[]> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.getCalls(),
+      android: () => TwilioVoiceReactNativeExpo!.getCalls(),
       ios: () => RNTwilioVoice.voice_getCalls(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   voice_getCallInvites: (): Promise<NativeCallInviteInfo[]> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.getCallInvites(),
+      android: () => TwilioVoiceReactNativeExpo!.getCallInvites(),
       ios: () => RNTwilioVoice.voice_getCallInvites(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   voice_getDeviceToken: (): Promise<string> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.getDeviceToken(),
+      android: () => TwilioVoiceReactNativeExpo!.getDeviceToken(),
       ios: () => RNTwilioVoice.voice_getDeviceToken(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   voice_getVersion: (): Promise<string> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.getVersion(),
+      android: () => TwilioVoiceReactNativeExpo!.getVersion(),
       ios: () => RNTwilioVoice.voice_getVersion(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
   voice_handleEvent: (
     remoteMessage: Record<string, string>
   ): Promise<boolean> => {
-    if (Platform.OS === 'android' && ExpoTwilioVoice) {
-      return ExpoTwilioVoice.handleEvent(remoteMessage);
+    if (Platform.OS === 'android' && TwilioVoiceReactNativeExpo) {
+      return TwilioVoiceReactNativeExpo.handleEvent(remoteMessage);
     } else if (Platform.OS === 'android') {
       return RNTwilioVoice.voice_handleEvent(remoteMessage);
     } else {
@@ -369,7 +369,7 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
   },
   voice_selectAudioDevice: (uuid: Uuid): Promise<void> =>
     Platform.select({
-      android: () => ExpoTwilioVoice!.selectAudioDevice(uuid),
+      android: () => TwilioVoiceReactNativeExpo!.selectAudioDevice(uuid),
       ios: () => RNTwilioVoice.voice_selectAudioDevice(uuid),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
