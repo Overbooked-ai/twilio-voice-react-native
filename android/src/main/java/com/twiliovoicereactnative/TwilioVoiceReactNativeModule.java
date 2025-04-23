@@ -88,6 +88,7 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
 
   private final ReactApplicationContext reactContext;
   private final AudioSwitchManager audioSwitchManager;
+  private final JSEventEmitter jsEventEmitter;
 
   public TwilioVoiceReactNativeModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -103,8 +104,13 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
     // Initialize VoiceApplicationProxy - this will also call onCreate()
     VoiceApplicationProxy.getInstance(reactContext);
 
-    // Now it's safe to access components
-    getJSEventEmitter().setContext(reactContext);
+    // Initialize JSEventEmitter
+    this.jsEventEmitter = VoiceApplicationProxy.getJSEventEmitter();
+    if (this.jsEventEmitter != null) {
+      this.jsEventEmitter.setContext(reactContext);
+    } else {
+      logger.error("Failed to get JSEventEmitter from VoiceApplicationProxy");
+    }
 
     // Set up audio switch listener
     audioSwitchManager = VoiceApplicationProxy.getAudioSwitchManager()
@@ -115,7 +121,7 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
           selectedDevice
         );
         audioDeviceInfo.putString(VoiceEventType, VoiceEventAudioDevicesUpdated);
-        getJSEventEmitter().sendEvent(ScopeVoice, audioDeviceInfo);
+        sendJSEvent(audioDeviceInfo);
       });
   }
 
@@ -750,6 +756,10 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
   }
 
   private void sendJSEvent(@NonNull WritableMap event) {
-    getJSEventEmitter().sendEvent(ScopeVoice, event);
+    if (jsEventEmitter != null) {
+      jsEventEmitter.sendEvent(ScopeVoice, event);
+    } else {
+      logger.error("Cannot send JS event - JSEventEmitter is null");
+    }
   }
 }
