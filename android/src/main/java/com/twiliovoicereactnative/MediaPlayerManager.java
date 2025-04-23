@@ -3,11 +3,12 @@ package com.twiliovoicereactnative;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
+import android.media.MediaPlayer;
 
 import java.util.HashMap;
 import java.util.Map;
 
-class MediaPlayerManager {
+public class MediaPlayerManager {
   public enum SoundTable {
     INCOMING,
     OUTGOING,
@@ -17,8 +18,11 @@ class MediaPlayerManager {
   private final SoundPool soundPool;
   private final Map<SoundTable, Integer> soundMap;
   private int activeStream;
+  private final Context context;
+  private MediaPlayer mediaPlayer;
 
-  MediaPlayerManager(Context context) {
+  public MediaPlayerManager(Context context) {
+    this.context = context;
     soundPool = (new SoundPool.Builder())
       .setMaxStreams(2)
       .setAudioAttributes(
@@ -48,6 +52,19 @@ class MediaPlayerManager {
   public void stop() {
     soundPool.stop(activeStream);
     activeStream = 0;
+  }
+
+  public void start() {
+    if (mediaPlayer != null && !mediaPlayer.isPlaying()) {
+      mediaPlayer.start();
+    }
+  }
+
+  public void release() {
+    if (mediaPlayer != null) {
+      mediaPlayer.release();
+      mediaPlayer = null;
+    }
   }
 
   @Override

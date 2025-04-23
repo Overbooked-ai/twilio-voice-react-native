@@ -165,17 +165,17 @@ public class VoiceApplicationProxy {
       return;
     }
     Log.d(TAG, "Initializing VoiceApplicationProxy");
-    
+
     // Initialize components in order
     audioSwitchManager.start();
-    mediaPlayerManager.start();
-    
+    // No need to call play() or start() here since it should be called with specific sounds when needed
+
     // Bind to voice service
     context.bindService(
       new Intent(context, VoiceService.class),
       voiceServiceObserver,
       Context.BIND_AUTO_CREATE);
-      
+
     isInitialized = true;
   }
 
@@ -184,21 +184,21 @@ public class VoiceApplicationProxy {
       return;
     }
     Log.d(TAG, "Terminating VoiceApplicationProxy");
-    
+
     // Unbind service first
     try {
       context.unbindService(voiceServiceObserver);
     } catch (IllegalArgumentException e) {
       Log.w(TAG, "Service was not bound", e);
     }
-    
+
     // Stop components in reverse order
     mediaPlayerManager.stop();
     audioSwitchManager.stop();
-    
+
     // Clean up notification channels
     NotificationUtility.destroyNotificationChannels(context);
-    
+
     // Verify no call records are leaked
     for (CallRecord callRecord: callRecordDatabase.getCollection()) {
       Log.w(TAG,
@@ -208,7 +208,7 @@ public class VoiceApplicationProxy {
           (null != callRecord.getCallSid()) ? callRecord.getCallSid() : "null"));
     }
     callRecordDatabase.clear();
-    
+
     isInitialized = false;
   }
 
@@ -238,6 +238,71 @@ public class VoiceApplicationProxy {
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
       return null;
+    }
+  }
+
+  public VoiceServiceAPI getVoiceServiceAPI() {
+    synchronized (lock) {
+      if (voiceServiceApi == null) {
+        initialize();
+      }
+      return voiceServiceApi;
+    }
+  }
+
+  public MediaPlayerManager getMediaPlayerManager() {
+    synchronized (lock) {
+      if (mediaPlayerManager == null) {
+        initialize();
+      }
+      return mediaPlayerManager;
+    }
+  }
+
+  public AudioSwitchManager getAudioSwitchManager() {
+    synchronized (lock) {
+      if (audioSwitchManager == null) {
+        initialize();
+      }
+      return audioSwitchManager;
+    }
+  }
+
+  public CallRecordDatabase getCallRecordDatabase() {
+    synchronized (lock) {
+      if (callRecordDatabase == null) {
+        initialize();
+      }
+      return callRecordDatabase;
+    }
+  }
+
+  public JSEventEmitter getJSEventEmitter() {
+    synchronized (lock) {
+      if (jsEventEmitter == null) {
+        initialize();
+      }
+      return jsEventEmitter;
+    }
+  }
+
+  private void initialize() {
+    synchronized (lock) {
+      if (voiceServiceApi == null) {
+        voiceServiceApi = new VoiceServiceAPI(context);
+      }
+      if (mediaPlayerManager == null) {
+        mediaPlayerManager = new MediaPlayerManager(context);
+      }
+      if (audioSwitchManager == null) {
+        audioSwitchManager = new AudioSwitchManager(context);
+      }
+      if (callRecordDatabase == null) {
+        callRecordDatabase = new CallRecordDatabase(context);
+      }
+      if (jsEventEmitter == null) {
+        jsEventEmitter = new JSEventEmitter();
+      }
     }
   }
 }

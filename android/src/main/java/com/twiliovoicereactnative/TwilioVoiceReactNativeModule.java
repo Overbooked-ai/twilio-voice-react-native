@@ -120,10 +120,9 @@ public class TwilioVoiceReactNativeModule extends ReactContextBaseJavaModule {
   }
 
   @Override
-  public void onCatalystInstanceDestroy() {
-    super.onCatalystInstanceDestroy();
-    // Clean up when the module is destroyed
-    VoiceApplicationProxy.getInstance().onTerminate();
+  public void invalidate() {
+    VoiceApplicationProxy.getInstance(getReactApplicationContext()).onTerminate();
+    super.invalidate();
   }
 
   /**
