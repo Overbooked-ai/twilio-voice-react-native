@@ -123,7 +123,8 @@ const RNTwilioVoice =
 let ExpoTwilioVoice: TwilioVoiceExpoModule | null = null;
 if (Platform.OS === 'android') {
   try {
-    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
+    ExpoTwilioVoice =
+      NativeModules.TwilioVoiceReactNativeExpo as TwilioVoiceExpoModule;
     if (!ExpoTwilioVoice) {
       throw new Error('TwilioVoiceReactNativeExpo module is null');
     }
@@ -133,7 +134,8 @@ if (Platform.OS === 'android') {
       error
     );
     // Fall back to regular React Native module on Android if Expo module is not available
-    ExpoTwilioVoice = NativeModules.TwilioVoiceReactNative as unknown as TwilioVoiceExpoModule;
+    ExpoTwilioVoice =
+      NativeModules.TwilioVoiceReactNative as unknown as TwilioVoiceExpoModule;
   }
 }
 
@@ -272,6 +274,9 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
     displayName: string | undefined
   ): Promise<NativeCallInfo> => {
     if (Platform.OS === 'android' && ExpoTwilioVoice) {
+      if (!ExpoTwilioVoice) {
+        throw new Error('ExpoTwilioVoice undefined, weird state');
+      }
       return ExpoTwilioVoice.connect(token, {
         params,
         notificationDisplayName: displayName,
@@ -348,7 +353,9 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
       ios: () => RNTwilioVoice.voice_getVersion(),
       default: () => Promise.reject('Unsupported platform'),
     })!(),
-  voice_handleEvent: (remoteMessage: Record<string, string>): Promise<boolean> => {
+  voice_handleEvent: (
+    remoteMessage: Record<string, string>
+  ): Promise<boolean> => {
     if (Platform.OS === 'android' && ExpoTwilioVoice) {
       return ExpoTwilioVoice.handleEvent(remoteMessage);
     } else if (Platform.OS === 'android') {
