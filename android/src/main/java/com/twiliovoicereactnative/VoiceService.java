@@ -63,39 +63,18 @@ import java.util.UUID;
 
 public class VoiceService extends Service {
   private static final SDKLog logger = new SDKLog(VoiceService.class);
-  public class VoiceServiceAPI extends Binder {
-    public Call connect(@NonNull ConnectOptions cxnOptions,
-                        @NonNull Call.Listener listener) {
-      logger.debug("connect");
-      return Voice.connect(VoiceService.this, cxnOptions, listener);
-    }
-    public void disconnect(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.disconnect(callRecord);
-    }
-    public void incomingCall(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.incomingCall(callRecord);
-    }
-    public void acceptCall(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.acceptCall(callRecord);
-    }
-    public void rejectCall(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.rejectCall(callRecord);
-    }
-    public void cancelCall(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.cancelCall(callRecord);
-    }
-    public void raiseOutgoingCallNotification(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.raiseOutgoingCallNotification(callRecord);
-    }
-    public void cancelActiveCallNotification(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.cancelActiveCallNotification(callRecord);
-    }
-    public void foregroundAndDeprioritizeIncomingCallNotification(final CallRecordDatabase.CallRecord callRecord) {
-      VoiceService.this.foregroundAndDeprioritizeIncomingCallNotification(callRecord);
-    }
-    public Context getServiceContext() {
-      return VoiceService.this;
-    }
+  public interface VoiceServiceAPI extends IBinder {
+    void register(String token) throws SecurityException;
+    void unregister(String token) throws SecurityException;
+    Call connect(ConnectOptions connectOptions, Call.Listener callListener) throws SecurityException;
+    void disconnect(CallRecord callRecord);
+    void acceptCall(CallRecord callRecord) throws SecurityException;
+    void rejectCall(CallRecord callRecord);
+    void cancelCall(CallRecord callRecord);
+    void incomingCall(CallRecord callRecord);
+    void cancelActiveCallNotification(CallRecord callRecord);
+    void raiseOutgoingCallNotification(CallRecord callRecord);
+    Context getServiceContext();
   }
 
   @Override

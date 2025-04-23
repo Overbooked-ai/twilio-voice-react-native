@@ -107,7 +107,29 @@ public class VoiceApplicationProxy {
     }
   }
 
-  public synchronized CallRecordDatabase getCallRecordDatabase() {
+  // Static delegate methods for backward compatibility
+  public static synchronized CallRecordDatabase getCallRecordDatabase() {
+    return getInstance().getCallRecordDatabaseInstance();
+  }
+
+  public static synchronized AudioSwitchManager getAudioSwitchManager() {
+    return getInstance().getAudioSwitchManagerInstance();
+  }
+
+  public static synchronized MediaPlayerManager getMediaPlayerManager() {
+    return getInstance().getMediaPlayerManagerInstance();
+  }
+
+  public static synchronized JSEventEmitter getJSEventEmitter() {
+    return getInstance().getJSEventEmitterInstance();
+  }
+
+  public static synchronized VoiceService.VoiceServiceAPI getVoiceServiceAPI() {
+    return getInstance().getVoiceServiceAPIInstance();
+  }
+
+  // Instance methods
+  private synchronized CallRecordDatabase getCallRecordDatabaseInstance() {
     if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
@@ -115,7 +137,7 @@ public class VoiceApplicationProxy {
     return callRecordDatabase;
   }
 
-  public synchronized AudioSwitchManager getAudioSwitchManager() {
+  private synchronized AudioSwitchManager getAudioSwitchManagerInstance() {
     if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
@@ -123,7 +145,7 @@ public class VoiceApplicationProxy {
     return audioSwitchManager;
   }
 
-  public synchronized MediaPlayerManager getMediaPlayerManager() {
+  private synchronized MediaPlayerManager getMediaPlayerManagerInstance() {
     if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
@@ -131,7 +153,7 @@ public class VoiceApplicationProxy {
     return mediaPlayerManager;
   }
 
-  public synchronized JSEventEmitter getJSEventEmitter() {
+  private synchronized JSEventEmitter getJSEventEmitterInstance() {
     if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
@@ -139,7 +161,7 @@ public class VoiceApplicationProxy {
     return jsEventEmitter;
   }
 
-  public synchronized VoiceService.VoiceServiceAPI getVoiceServiceAPI() {
+  private synchronized VoiceService.VoiceServiceAPI getVoiceServiceAPIInstance() {
     if (!isInitialized) {
       Log.e(TAG, "VoiceApplicationProxy not initialized");
       return null;
