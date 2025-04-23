@@ -9,8 +9,6 @@ import type {
   NativeCallFeedbackScore,
   NativeCallFeedbackIssue,
   RTCStats,
-  NativeCallMessageInfo,
-  NativeCallState,
 } from '../type';
 
 // Original Interface (Matches updated src/type/NativeModule.ts)
@@ -389,4 +387,3 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
 
 // Export the wrapper as the native module implementation
 export default NativeModuleWrapper;
-
