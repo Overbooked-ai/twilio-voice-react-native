@@ -390,15 +390,3 @@ const NativeModuleWrapper: TwilioVoiceReactNative = {
 // Export the wrapper as the native module implementation
 export default NativeModuleWrapper;
 
-// Re-export the types for backward compatibility
-export {
-  Uuid,
-  NativeCallInfo,
-  NativeCallInviteInfo,
-  NativeAudioDevicesInfo,
-  NativeCallFeedbackScore,
-  NativeCallFeedbackIssue,
-  RTCStats,
-  NativeCallMessageInfo,
-  NativeCallState,
-};
