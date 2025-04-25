@@ -1,4 +1,4 @@
-package com.twiliovoicereactnative.expo
+package com.twiliovoicereactnative
 
 import android.content.Context
 import androidx.core.os.bundleOf
@@ -33,7 +33,7 @@ object ReactNativeArgumentsSerializerExpo {
         val map = mutableMapOf<String, Any?>(
             "uuid" to callRecord.uuid.toString(),
             // Provide state accurately based on whether it's an active call or pending invite
-            "state" to call?.state?.name?.lowercase() ?: "pending", 
+            "state" to call?.state?.name?.lowercase() ?: "pending",
             "to" to call?.to ?: callInvite?.to,
             "from" to call?.from ?: callInvite?.from,
             "sid" to call?.sid ?: callInvite?.callSid,
@@ -45,7 +45,7 @@ object ReactNativeArgumentsSerializerExpo {
         // Remove nulls before sending to JS
         return map.filterValues { it != null }
     }
-    
+
     // Convert VoiceException to Map
     fun serializeVoiceExceptionExpo(exception: VoiceException): Map<String, Any?> {
          return mapOf(
@@ -99,10 +99,10 @@ object ReactNativeArgumentsSerializerExpo {
     fun serializeStatsReportExpo(statsReport: StatsReport): Map<String, Any?> {
         logger.debug("Serializing StatsReport...")
         val reportMap = mutableMapOf<String, Any?>()
-        
-        // --- Extract Key Metrics --- 
+
+        // --- Extract Key Metrics ---
         // Note: Keys and availability might differ across SDK versions.
-        
+
         // ICE Candidate Pair Stats (Transport Information)
         val candidatePairStats = statsReport.iceCandidatePairStats.firstOrNull { it.nominated == true }
         if (candidatePairStats != null) {
@@ -143,7 +143,7 @@ object ReactNativeArgumentsSerializerExpo {
             )
              reportMap["remoteAudioTrackStats"] = remoteStatsMap.filterValues { it != null }
         }
-        
+
         // Add Peer Connection Stats if needed (e.g., dataChannelsOpened)
         // reportMap["peerConnectionId"] = statsReport.peerConnectionId
 
@@ -155,12 +155,12 @@ object ReactNativeArgumentsSerializerExpo {
     fun serializeCallMessage(callMessage: CallMessage): Map<String, Any?> {
         return mapOf(
             "sid" to callMessage.sid,
-            "messageType" to callMessage.type.name, 
+            "messageType" to callMessage.type.name,
             "contentType" to callMessage.contentType,
             "content" to callMessage.content,
             // Use the message SID as the voiceEventSid, consistent with how
             // the original library likely handled similar events.
-            "voiceEventSid" to callMessage.sid 
+            "voiceEventSid" to callMessage.sid
         ).filterValues { it != null }
     }
 
@@ -227,7 +227,7 @@ class ExpoCallListenerProxy(
             "call" to ReactNativeArgumentsSerializerExpo.serializeCallExpo(callRecord)
         ))
     }
-    
+
     override fun onDisconnected(call: Call, exception: CallException?) {
         logger.log("onDisconnected")
         val callRecord = CallRecordDatabase.getInstance(context).get(callUuid) ?: return
@@ -257,7 +257,7 @@ class ExpoCallListenerProxy(
             "error" to ReactNativeArgumentsSerializerExpo.serializeVoiceExceptionExpo(callException)
         ))
     }
-    
+
     override fun onReconnected(call: Call) {
         logger.log("onReconnected")
         val callRecord = CallRecordDatabase.getInstance(context).get(callUuid) ?: return
@@ -265,7 +265,7 @@ class ExpoCallListenerProxy(
             "call" to ReactNativeArgumentsSerializerExpo.serializeCallExpo(callRecord)
         ))
     }
-    
+
     override fun onQualityWarningsChanged(call: Call, currentWarnings: Set<Call.Warnings>, previousWarnings: Set<Call.Warnings>) {
         logger.debug("onQualityWarningsChanged")
         val callRecord = CallRecordDatabase.getInstance(context).get(callUuid) ?: return
@@ -325,4 +325,4 @@ class ExpoCallMessageListenerProxy(
     }
 }
 
-// TODO: Implement ExpoCallMessageListenerProxy, ExpoStatsListenerProxy etc. 
+// TODO: Implement ExpoCallMessageListenerProxy, ExpoStatsListenerProxy etc.

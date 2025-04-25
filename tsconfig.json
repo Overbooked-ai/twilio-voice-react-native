@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
+    "baseUrl": "./",
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "jsx": "react",
@@ -17,8 +17,22 @@
     "sourceMap": true,
     "strict": true,
     "target": "esnext",
-    "typeRoots": ["node_modules/@types"],
-    "resolveJsonModule": true
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/expo-modules-core"
+    ],
+    "resolveJsonModule": true,
+    "paths": {
+      "@twilio/voice-react-native-sdk": ["./src/index"],
+      "expo-modules-core": ["node_modules/expo-modules-core"]
+    },
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitUseStrict": false,
+    "noStrictGenericChecks": false,
+    "noUnusedParameters": true,
+    "types": ["node", "jest"]
   },
   "exclude": [
     "coverage",

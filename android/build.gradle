@@ -23,6 +23,7 @@ buildscript {
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 def safeExtGet(prop, fallback) {
   rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
@@ -59,8 +60,10 @@ android {
 dependencies {
   //noinspection GradleDynamicVersion
   implementation "com.facebook.react:react-native:+"  // From node_modules
+  implementation project(':expo-modules-core')
   implementation "com.twilio:voice-android:${versions.voiceAndroid}"
   implementation "androidx.core:core:${versions.androidxCore}"
+  implementation "androidx.lifecycle:lifecycle-extensions:${versions.androidxLifecycle}"
   implementation "com.google.firebase:firebase-messaging:${versions.firebaseMessaging}"
   implementation "com.twilio:audioswitch:${versions.audioSwitch}"
   implementation 'com.google.android.material:material:1.1.0'

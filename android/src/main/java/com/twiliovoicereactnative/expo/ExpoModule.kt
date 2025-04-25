@@ -7,10 +7,12 @@ import expo.modules.kotlin.Promise
 import expo.modules.kotlin.exception.CodedException
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.exception.UnexpectedException
-import expo.modules.kotlin.AppContext // Import AppContext
+import expo.modules.kotlin.AppContext
+import expo.modules.kotlin.ModuleRegistry
 
 // Standard Android/Java Imports
 import android.content.Context
+import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -32,14 +34,17 @@ import com.twilio.voice.Voice
 import com.twilio.voice.CallMessageListener
 import com.twilio.voice.StatsListener
 import com.twilio.voice.StatsReport
+import com.twilio.voice.CallException
 
 // Twilio AudioSwitch Imports
 import com.twilio.audioswitch.AudioDevice
 
-// Local Project Imports (assuming they are in the same module or accessible)
-import com.twiliovoicereactnative.* // Import necessary classes from original package
+// Local Project Imports
+import com.twiliovoicereactnative.*
+import com.twiliovoicereactnative.expo.ReactNativeArgumentsSerializerExpo
 
 // Define event names consistent with the original module and add call events
+private const val TAG = "ExpoModule"
 private const val VOICE_EVENT_ERROR = "error"
 private const val VOICE_EVENT_REGISTERED = "registered"
 private const val VOICE_EVENT_UNREGISTERED = "unregistered"
@@ -66,9 +71,12 @@ private const val CALL_STATE_RECONNECTING = "reconnecting"
 private const val CALL_STATE_RECONNECTED = "reconnected"
 private const val CALL_STATE_DISCONNECTED = "disconnected"
 
-class ExpoModule : Module() {
+class ExpoModule(private val moduleRegistry: ModuleRegistry) : Module() {
   private val mainHandler = Handler(Looper.getMainLooper())
   private val logger = SDKLog(ExpoModule::class.java)
+  private var voiceApplicationProxy: VoiceApplicationProxy? = null
+  private var activeCall: Call? = null
+  private var audioManager: AudioManager? = null
 
   // Accessing context - Use appContext provided by Expo Module
   private val context: Context
@@ -91,7 +99,7 @@ class ExpoModule : Module() {
 
   // --- Module Definition ---
   override fun definition() = ModuleDefinition {
-    Name("ExpoTwilioVoice")
+    Name("TwilioVoiceReactNative")
 
     // Define all events that can be emitted to JavaScript
     Events(
@@ -110,7 +118,10 @@ class ExpoModule : Module() {
       CALL_INVITE_EVENT_ACCEPTED,
       CALL_INVITE_EVENT_REJECTED,
       CALL_INVITE_EVENT_CANCELLED,
-      CALL_INVITE_EVENT_NOTIFICATION_TAPPED
+      CALL_INVITE_EVENT_NOTIFICATION_TAPPED,
+      "callFailed",
+      "muteChanged",
+      "speakerChanged"
     )
 
     // Module Lifecycle: OnCreate
@@ -150,6 +161,8 @@ class ExpoModule : Module() {
       } ?: run {
         Log.e(TAG, "AudioSwitchManager not initialized")
       }
+
+      audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
 
     OnDestroy {
@@ -170,49 +183,14 @@ class ExpoModule : Module() {
     }
 
     AsyncFunction("connect") { accessToken: String, options: Map<String, Any>, promise: Promise ->
-        logger.debug("connect called (Expo)")
-        mainHandler.post {
-            try {
-                val connectOptionsBuilder = ConnectOptions.Builder(accessToken)
-                val twimlParams = HashMap<String, String>()
-                val paramsFromOptions = options["params"] as? Map<*, *>
-                paramsFromOptions?.forEach { (key, value) ->
-                    if (key is String && value != null) {
-                        twimlParams[key.toString()] = value.toString()
-                    }
-                }
-                connectOptionsBuilder.params(twimlParams)
-                connectOptionsBuilder.enableDscp(true)
-
-                val uuid = UUID.randomUUID()
-                // Pass `this@ExpoModule` so the proxy can call sendEvent
-                val callListenerProxy = ExpoCallListenerProxy(uuid, applicationContext, this@ExpoModule)
-                val messageListenerProxy = ExpoCallMessageListenerProxy(uuid, applicationContext, this@ExpoModule)
-                connectOptionsBuilder.callMessageListener(messageListenerProxy)
-                
-                val connectOptions = connectOptionsBuilder.build()
-
-                // Get voiceServiceApi via property getter
-                val call = voiceServiceApi.connect(connectOptions, callListenerProxy)
-                val callRecipient = twimlParams["to"] ?: "Unknown"
-                val notificationDisplayName = options["notificationDisplayName"] as? String ?: "Incoming Call"
-
-                val callRecord = CallRecordDatabase.CallRecord(
-                    uuid, call, callRecipient, twimlParams,
-                    CallRecordDatabase.CallRecord.Direction.OUTGOING, notificationDisplayName
-                )
-                // Use property getter for database
-                callRecordDatabase.add(callRecord)
-
-                // Use the new serializer
-                promise.resolve(ReactNativeArgumentsSerializerExpo.serializeCallExpo(callRecord))
-
-            } catch (e: SecurityException) {
-                promise.reject(CodedException("E_SECURITY_PERMISSION", "Missing RECORD_AUDIO permission?", e))
-            } catch (e: Exception) {
-                promise.reject(CodedException("E_CONNECT_FAILED", e.message ?: "Connection failed", e))
-            }
-        }
+      try {
+        val params = (options["params"] as? Map<String, Any>) ?: emptyMap()
+        val displayName = options["notificationDisplayName"] as? String
+        val call = voiceApplicationProxy?.getVoiceServiceAPI()?.connect(accessToken, params, displayName)
+        promise.resolve(call)
+      } catch (e: Exception) {
+        promise.reject("CONNECT_ERROR", e)
+      }
     }
 
     AsyncFunction("getDeviceToken") { promise: Promise ->
@@ -566,6 +544,81 @@ class ExpoModule : Module() {
     Function("removeListeners") { count: Int ->
         // Optional: Log or track listeners if needed
         logger.debug("removeListeners called with count: $count (Expo - No-op)")
+    }
+
+    Function("makeCall") { to: String ->
+        try {
+            val connectOptions = ConnectOptions.Builder(to)
+                .enableRinging(true)
+                .build()
+
+            activeCall = Voice.connect(appContext.reactContext!!, connectOptions, object : Call.Listener {
+                override fun onConnected(call: Call) {
+                    Log.d(TAG, "Call connected")
+                    sendEvent("callConnected", mapOf("to" to to))
+                }
+
+                override fun onDisconnected(call: Call, callException: CallException?) {
+                    Log.d(TAG, "Call disconnected")
+                    activeCall = null
+                    sendEvent("callDisconnected", mapOf(
+                        "error" to (callException?.message ?: "")
+                    ))
+                }
+
+                override fun onConnectFailure(call: Call, error: CallException) {
+                    Log.e(TAG, "Call failed: ${error.message}")
+                    activeCall = null
+                    sendEvent("callFailed", mapOf("error" to error.message))
+                }
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "Error making call: ${e.message}")
+            throw Error("Failed to make call: ${e.message}")
+        }
+    }
+
+    Function("endCall") {
+        try {
+            activeCall?.disconnect()
+            activeCall = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error ending call: ${e.message}")
+            throw Error("Failed to end call: ${e.message}")
+        }
+    }
+
+    Function("toggleMute") { shouldMute: Boolean ->
+        try {
+            activeCall?.let { call ->
+                call.mute(shouldMute)
+                sendEvent("muteChanged", mapOf("isMuted" to shouldMute))
+            } ?: throw Error("No active call to mute/unmute")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error toggling mute: ${e.message}")
+            throw Error("Failed to toggle mute: ${e.message}")
+        }
+    }
+
+    Function("toggleSpeaker") { shouldEnableSpeaker: Boolean ->
+        try {
+            audioManager?.let { audio ->
+                audio.isSpeakerphoneOn = shouldEnableSpeaker
+                sendEvent("speakerChanged", mapOf("isSpeakerOn" to shouldEnableSpeaker))
+            } ?: throw Error("AudioManager not initialized")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error toggling speaker: ${e.message}")
+            throw Error("Failed to toggle speaker: ${e.message}")
+        }
+    }
+
+    Function("sendDigits") { digits: String ->
+        try {
+            activeCall?.sendDigits(digits)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending digits: ${e.message}")
+            throw Error("Failed to send digits: ${e.message}")
+        }
     }
 
   } // End of definition block

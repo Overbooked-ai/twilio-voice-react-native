@@ -1,5 +1,6 @@
 {
-  "platforms": ["ios", "android"],
+  "name": "twilio-voice-react-native",
+  "platforms": ["android", "ios"],
   "ios": {
     "modules": ["TwilioVoiceReactNative"] 
   },

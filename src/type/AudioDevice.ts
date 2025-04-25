@@ -1,9 +1,9 @@
 import type { Constants } from '../constants';
-import { NativeAudioDeviceType } from './common';
+import type { AudioDevice } from '../AudioDevice';
 
 export interface NativeAudioDeviceInfo {
   uuid: string;
-  type: NativeAudioDeviceType;
+  type: AudioDevice.Type;
   name: string;
 }
 

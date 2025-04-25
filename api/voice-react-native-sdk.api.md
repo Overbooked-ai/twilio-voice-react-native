@@ -4,26 +4,35 @@
 
 ```ts
 
-import type { Call as Call_2 } from '../../lib';
-import type { Constants } from '../../lib/constants';
 import { EventEmitter } from 'eventemitter3';
 
-// @public (undocumented)
+// @public
 export class AudioDevice extends EventEmitter {
     // Warning: (ae-forgotten-export) The symbol "NativeAudioDeviceInfo" needs to be exported by the entry point index.d.ts
     constructor({ uuid, type, name }: NativeAudioDeviceInfo);
     // (undocumented)
     get name(): string;
-    // (undocumented)
     select(): Promise<void>;
-    // Warning: (ae-forgotten-export) The symbol "NativeAudioDeviceType" needs to be exported by the entry point index.d.ts
-    //
     // (undocumented)
-    get type(): NativeAudioDeviceType;
+    get type(): AudioDevice.Type;
     // Warning: (ae-forgotten-export) The symbol "Uuid" needs to be exported by the entry point index.d.ts
     //
     // (undocumented)
     get uuid(): Uuid;
+}
+
+// @public
+export namespace AudioDevice {
+    export enum Type {
+        // (undocumented)
+        Bluetooth = "bluetooth",
+        // (undocumented)
+        Earpiece = "earpiece",
+        // (undocumented)
+        Speaker = "speaker",
+        // (undocumented)
+        WiredHeadset = "wired_headset"
+    }
 }
 
 // @public
@@ -267,71 +276,72 @@ export namespace Call {
     }
 }
 
-// @public
-export interface CallInvite {
-    addListener(acceptedEvent: CallInvite.Event.Accepted, listener: CallInvite.Listener.Accepted): this;
-    addListener(rejectedEvent: CallInvite.Event.Rejected, listener: CallInvite.Listener.Rejected): this;
-    addListener(cancelledEvent: CallInvite.Event.Cancelled, listener: CallInvite.Listener.Cancelled): this;
-    addListener(notificationTappedEvent: CallInvite.Event.NotificationTapped, listener: CallInvite.Listener.NotificationTapped): this;
-    addListener(messageReceivedEvent: CallInvite.Event.MessageReceived, listener: CallInvite.Listener.MessageReceived): this;
-    // @internal (undocumented)
-    emit(acceptedEvent: CallInvite.Event.Accepted, call: Call): boolean;
-    // @internal (undocumented)
-    emit(rejectedEvent: CallInvite.Event.Rejected): boolean;
-    // @internal (undocumented)
-    emit(cancelledEvent: CallInvite.Event.Cancelled, error?: TwilioError): boolean;
-    // @internal (undocumented)
-    emit(notificationTappedEvent: CallInvite.Event.NotificationTapped): boolean;
-    // @internal (undocumented)
-    emit(messageReceivedEvent: CallInvite.Event.MessageReceived, incomingCallMessage: IncomingCallMessage): boolean;
-    on(acceptedEvent: CallInvite.Event.Accepted, listener: CallInvite.Listener.Accepted): this;
-    on(rejectedEvent: CallInvite.Event.Rejected, listener: CallInvite.Listener.Rejected): this;
-    on(cancelledEvent: CallInvite.Event.Cancelled, listener: CallInvite.Listener.Cancelled): this;
-    on(notificationTappedEvent: CallInvite.Event.NotificationTapped, listener: CallInvite.Listener.NotificationTapped): this;
-    on(messageReceivedEvent: CallInvite.Event.MessageReceived, listener: CallInvite.Listener.MessageReceived): this;
-}
-
-// @public
+// @public (undocumented)
 export class CallInvite extends EventEmitter {
     // Warning: (ae-forgotten-export) The symbol "NativeCallInviteInfo" needs to be exported by the entry point index.d.ts
-    //
-    // @internal
     constructor({ uuid, callSid, customParameters, from, to }: NativeCallInviteInfo, state: CallInvite.State);
+    // (undocumented)
     accept(options?: CallInvite.AcceptOptions): Promise<Call>;
+    // (undocumented)
     getCallSid(): string;
+    // (undocumented)
     getCustomParameters(): CustomParameters;
+    // (undocumented)
     getFrom(): string;
+    // (undocumented)
     getState(): CallInvite.State;
+    // (undocumented)
     getTo(): string;
-    // @alpha
+    // (undocumented)
     isValid(): Promise<boolean>;
+    // (undocumented)
     reject(): Promise<void>;
-    sendMessage(message: CallMessage): Promise<OutgoingCallMessage>;
+    // (undocumented)
     updateCallerHandle(newHandle: string): Promise<void>;
 }
 
-// @public
+// @public (undocumented)
 export namespace CallInvite {
-    export interface AcceptOptions {
+    // (undocumented)
+    export interface AcceptOptions extends Record<string, unknown> {
     }
+    // (undocumented)
     export enum Event {
+        // (undocumented)
         Accepted = "accepted",
+        // (undocumented)
         Cancelled = "cancelled",
+        // (undocumented)
         MessageReceived = "messageReceived",
+        // (undocumented)
         NotificationTapped = "notificationTapped",
+        // (undocumented)
         Rejected = "rejected"
     }
+    // (undocumented)
     export namespace Listener {
+        // (undocumented)
         export type Accepted = (call: Call) => void;
+        // (undocumented)
         export type Cancelled = (error?: TwilioError) => void;
-        export type MessageReceived = (incomingCallMessage: IncomingCallMessage) => void;
+        // (undocumented)
+        export type Generic = (...args: unknown[]) => void;
+        // (undocumented)
+        export type MessageReceived = (incomingCallMessage: any) => void;
+        // (undocumented)
         export type NotificationTapped = () => void;
+        // (undocumented)
         export type Rejected = () => void;
     }
+    // (undocumented)
     export enum State {
+        // (undocumented)
         Accepted = "accepted",
+        // (undocumented)
         Cancelled = "cancelled",
+        // (undocumented)
         Pending = "pending",
+        // (undocumented)
         Rejected = "rejected"
     }
 }

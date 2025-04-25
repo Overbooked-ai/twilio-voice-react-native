@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "twilio-voice-react-native",
+    "slug": "twilio-voice-react-native",
+    "version": "1.6.0-dev",
+    "sdkVersion": "52.0.0",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "android": {
+      "package": "expo.modules.twiliovoicereactnative"
+    },
+    "ios": {
+      "bundleIdentifier": "expo.modules.twiliovoicereactnative"
+    }
+  }
+} 
